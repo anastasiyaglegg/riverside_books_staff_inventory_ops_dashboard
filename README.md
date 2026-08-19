@@ -1,4 +1,4 @@
-# Riverside Books
+# Riverside Marketing Generator
 
 Riverside Books is an early-stage online bookstore product. This repository is the working home for product discovery, documentation, and implementation as the product takes shape.
 
