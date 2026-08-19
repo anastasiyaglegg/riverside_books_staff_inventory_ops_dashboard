@@ -1,46 +1,75 @@
-# Riverside Marketing Content Generator
+# Riverside Books Marketing Content Generator
 
-Riverside Books is an early-stage online bookstore product. This repository is the working home for product discovery, documentation, and implementation as the product takes shape.
+## Product D — Marketing Content & Generation System
 
-## Pursuit scope
+The Riverside Books Marketing Content Generator is an AI-powered product component designed to transform structured book data into customer-facing marketing content.
 
-The current scope is:
+This repository represents my individual contribution to the Riverside Books product suite. While Riverside Books is being developed as a larger multi-product system, this particular repository focuses specifically on **Product D: Marketing Content Generator**.
 
-- **Product D — Marketing Content Generator:** the primary product area. It helps Riverside Books create consistent, useful marketing content for books, campaigns, and customer communications.
-- **Product C — Customer Support Chatbot:** a supporting product area. It helps customers find answers, discover books, and get assistance during the buying journey.
+## Product Role
 
-The scope is intentionally narrow while the product is being validated. Storefront, catalog, checkout, fulfillment, and analytics work can be added later as the product definition matures.
+The purpose of this product is to help Riverside Books create engaging marketing materials from shared catalog data.
 
-## Repository structure
+The system takes structured book information and generates content that can be used for customer engagement, including:
 
-```text
-.
+- Promotional book descriptions
+- Marketing campaigns
+- Social media content
+- Customer-facing recommendations
+
+## How It Fits Into Riverside Books
+
+Riverside Books is being developed as a four-product suite where each product is built independently and later integrated into a larger company system.
+
+This repository owns the Marketing Content Generator component.
+
+The product depends on a shared data contract so that all Riverside Books products can work with consistent book information, including fields such as:
+
+- Book ID
+- Title
+- Author
+- Genre
+- Price
+- Stock Status
+- Description
+- Rating
+- Promotional Tags
+
+Maintaining consistent data structures allows each product to communicate reliably when the complete Riverside Books platform is assembled.
+
+## Current Goal
+
+The current goal is to build a reliable marketing content generation system that can:
+
+1. Accept structured book data.
+2. Generate useful marketing outputs.
+3. Handle realistic data variations and edge cases.
+4. Provide a foundation for future AI-powered marketing workflows.
+
+## Project Structure
+
+```
+riverside-marketing-content-generator/
+
+├── README.md
 ├── docs/
-│   ├── product-scope.md
-│   └── roadmap.md
-└── products/
-    ├── customer-support-chatbot/
-    │   └── README.md
-    └── marketing-content-generator/
-        └── README.md
+├── data/
+├── src/
+└── tests/
 ```
 
-The repository is documentation-first until an implementation stack and application boundaries are confirmed.
+## Development Approach
+
+This project follows an AI-native engineering workflow:
+
+- Define the product requirements first.
+- Establish a clear data contract.
+- Build and test core functionality.
+- Add AI capabilities with controlled inputs and outputs.
+- Document decisions and lessons learned.
 
 ## Status
 
-Early discovery and repository setup.
+🚧 In Development
 
-## Working principles
-
-- Keep the product useful for an independent bookstore and its customers.
-- Prefer small, testable product slices over broad platform work.
-- Treat generated content and support answers as reviewable outputs.
-- Keep customer data, store information, and credentials out of source control.
-
-## Next steps
-
-1. Define the first customer and bookstore workflows for Product D.
-2. Capture the support intents and source-of-truth content needed for Product C.
-3. Choose the implementation stack after the initial workflows are validated.
-4. Add runnable application code and tests behind the product-area documentation.
+Product D: Marketing Content Generator
