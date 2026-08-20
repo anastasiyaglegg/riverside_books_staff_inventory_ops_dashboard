@@ -1,0 +1,125 @@
+// Source of truth for the shared Riverside Books schema (backend + staff-dashboard
+// scope only -- see CLAUDE.md "Database Schema"). Any change needs a migration,
+// never a hand edit against Supabase.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Book {
+  id          String      @id @default(uuid())
+  title       String
+  author      String
+  isbn        String?     @unique
+  priceCents  Int         @map("price_cents")
+  category    String?
+  description String?
+  imageUrl    String?     @map("image_url")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  inventory   Inventory?
+  orderItems  OrderItem[]
+
+  @@map("books")
+}
+
+model Inventory {
+  id               String   @id @default(uuid())
+  bookId           String   @unique @map("book_id")
+  book             Book     @relation(fields: [bookId], references: [id])
+  quantityOnHand   Int      @map("quantity_on_hand")
+  reorderThreshold Int      @default(2) @map("reorder_threshold")
+  // "in_stock" | "low_stock" | "out_of_stock" -- derived via deriveStockStatus(), never hand-set.
+  status           String
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("inventory")
+}
+
+model Customer {
+  id                String               @id @default(uuid())
+  name              String
+  email             String?              @unique
+  phone             String?              @unique
+  loyaltyStampCount Int                  @default(0) @map("loyalty_stamp_count")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  orders            Order[]
+  loyaltyTx         LoyaltyTransaction[]
+
+  @@map("customers")
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  customerId    String      @map("customer_id")
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  // "placed" | "ready_for_pickup" | "completed" | "cancelled"
+  status        String
+  // "unpaid" | "paid_online" | "pay_in_store"
+  paymentStatus String      @map("payment_status")
+  totalCents    Int         @map("total_cents")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  items         OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String @id @default(uuid())
+  orderId        String @map("order_id")
+  order          Order  @relation(fields: [orderId], references: [id])
+  bookId         String @map("book_id")
+  book           Book   @relation(fields: [bookId], references: [id])
+  quantity       Int
+  unitPriceCents Int    @map("unit_price_cents")
+
+  @@map("order_items")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  eventDate   DateTime @map("event_date")
+  capacity    Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("events")
+}
+
+model LoyaltyTransaction {
+  id             String   @id @default(uuid())
+  customerId     String   @map("customer_id")
+  customer       Customer @relation(fields: [customerId], references: [id])
+  // "earn" | "redeem"
+  type           String
+  relatedOrderId String?  @map("related_order_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("loyalty_transactions")
+}
+
+model StorePolicy {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("store_policies")
+}
+
+model StaffUser {
+  id   String @id @default(uuid()) // matches Supabase Auth user id
+  name String
+  // "owner" | "bookseller"
+  role String
+
+  @@map("staff_users")
+}
