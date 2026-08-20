@@ -137,3 +137,28 @@ of `scripts/supabase-lifecycle.supabase.test.ts`).
 Husky is already wired (`npm install` at the repo root sets it up). `git commit` runs
 lint + typecheck + unit tests; `git push` runs the full suite. Don't bypass with
 `--no-verify` as a habit (see `../../best-practices-testing-commitandpush-learningdoc/`).
+
+## Deployment
+
+Both Vercel projects (`riverside-backend`, `riverside-staff-dashboard`) are connected
+to this GitHub repo -- **every push to `main` auto-deploys both to production.** No
+manual `vercel --prod` needed for routine changes; it's still fine to run for a quick
+one-off redeploy.
+
+Prisma migrations are **not** applied by the Vercel build (schema changes don't
+auto-apply on deploy, per the technical spec). `.github/workflows/migrate-supabase.yml`
+runs `prisma migrate deploy` against Supabase whenever `apps/backend/prisma/**` changes
+on a push to `main`, using the `DATABASE_URL`/`DIRECT_URL` repo secrets (Settings →
+Secrets and variables → Actions).
+
+**Known caveat**: the migration workflow and the Vercel deploy aren't ordered relative
+to each other -- both fire on the same push. For a schema change the backend's new code
+depends on, the Vercel deploy could theoretically finish and serve traffic against the
+old schema for a few seconds before the migration lands. Not a real risk at this
+project's scale/traffic, but worth knowing if that ever changes -- the fix would be
+gating the Vercel deploy behind the migration job (e.g. a Vercel Deploy Hook triggered
+from the end of the GitHub Actions job, with auto-deploy-on-push turned off).
+
+Also remember `postinstall: "prisma generate"` in `package.json` exists specifically so
+Vercel's build cache can't ship a stale Prisma Client after a schema change -- don't
+remove it.

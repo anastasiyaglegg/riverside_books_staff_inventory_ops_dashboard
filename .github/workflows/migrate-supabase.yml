@@ -1,0 +1,28 @@
+name: Migrate Supabase
+
+# Implements the CI step CLAUDE.md and the technical spec both call for:
+# "Prisma migrations run as a manual/CI step against Supabase before deploying
+# backend changes that depend on them (schema changes are not auto-applied on
+# deploy)." Runs `prisma migrate deploy` -- applies pending migrations only,
+# never resets or hand-edits the schema.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/backend/prisma/**"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Deploy pending Prisma migrations to Supabase
+        working-directory: apps/backend
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
