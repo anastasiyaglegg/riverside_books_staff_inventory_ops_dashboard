@@ -30,14 +30,18 @@ model Book {
 }
 
 model Inventory {
-  id               String   @id @default(uuid())
-  bookId           String   @unique @map("book_id")
-  book             Book     @relation(fields: [bookId], references: [id])
-  quantityOnHand   Int      @map("quantity_on_hand")
-  reorderThreshold Int      @default(2) @map("reorder_threshold")
+  id               String     @id @default(uuid())
+  bookId           String     @unique @map("book_id")
+  book             Book       @relation(fields: [bookId], references: [id])
+  quantityOnHand   Int        @map("quantity_on_hand")
+  reorderThreshold Int        @default(2) @map("reorder_threshold")
   // "in_stock" | "low_stock" | "out_of_stock" -- derived via deriveStockStatus(), never hand-set.
   status           String
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  // Story B3: "change is attributed to the staff user and timestamped" -- updatedAt
+  // covers the timestamp, this covers the attribution. Set on every PATCH, never on create.
+  lastAdjustedById String?    @map("last_adjusted_by_id")
+  lastAdjustedBy   StaffUser? @relation(fields: [lastAdjustedById], references: [id])
+  updatedAt        DateTime   @updatedAt @map("updated_at")
 
   @@map("inventory")
 }
@@ -116,10 +120,11 @@ model StorePolicy {
 }
 
 model StaffUser {
-  id   String @id @default(uuid()) // matches Supabase Auth user id
-  name String
+  id                String      @id @default(uuid()) // matches Supabase Auth user id
+  name              String
   // "owner" | "bookseller"
-  role String
+  role              String
+  adjustedInventory Inventory[]
 
   @@map("staff_users")
 }
