@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://riverside.example/schemas/book-record.json",
+  "title": "Riverside Books catalog record",
+  "description": "One shared book catalog record consumed by Product D for marketing content generation.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "book_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable, non-empty identifier for the book."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Customer-facing title of the book."
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary author name for customer-facing content."
+    },
+    "genre": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable genre label used for positioning and discovery."
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "multipleOf": 0.01,
+      "description": "Non-negative retail price in USD, represented in decimal dollars with no more than two decimal places."
+    },
+    "stock_status": {
+      "type": "string",
+      "enum": [
+        "in_stock",
+        "low_stock",
+        "out_of_stock"
+      ],
+      "description": "Canonical availability label that may affect marketing language; Product D does not manage inventory."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Approved book description used as the primary grounding source for generated copy."
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5,
+      "description": "Average customer rating on an inclusive 0.0 to 5.0 scale. The field is numeric and may use fractional precision; no rating should be invented when the value is unavailable."
+    },
+    "promotional_tag": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "One optional promotional label for the book, or null when no approved label applies. This field is intentionally not an array."
+    }
+  },
+  "required": [
+    "book_id",
+    "title",
+    "author",
+    "genre",
+    "price",
+    "stock_status",
+    "description",
+    "rating",
+    "promotional_tag"
+  ]
+}

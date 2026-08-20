@@ -35,3 +35,7 @@ temp/
 # Codex workspace folders
 work/
 outputs/
+
+# Keep the Product D source package named outputs/ trackable.
+!src/riverside_marketing/outputs/
+!src/riverside_marketing/outputs/**

@@ -1,0 +1,58 @@
+[
+  {
+    "case": "unsupported-stock-status",
+    "record": {
+      "book_id": "RB-INVALID-STOCK",
+      "title": "A Book with an Unclear Status",
+      "author": "Robin Vale",
+      "genre": "Mystery",
+      "price": 15.99,
+      "stock_status": "available",
+      "description": "This record should be rejected because its availability value is not canonical.",
+      "rating": 4.1,
+      "promotional_tag": null
+    }
+  },
+  {
+    "case": "rating-above-maximum",
+    "record": {
+      "book_id": "RB-INVALID-RATING",
+      "title": "A Rating Outside the Contract",
+      "author": "Casey Rowan",
+      "genre": "Romance",
+      "price": 17.50,
+      "stock_status": "in_stock",
+      "description": "This record should be rejected because its rating is above the inclusive five-point scale.",
+      "rating": 5.1,
+      "promotional_tag": "Featured"
+    }
+  },
+  {
+    "case": "empty-description",
+    "record": {
+      "book_id": "RB-INVALID-DESCRIPTION",
+      "title": "A Book without Grounding Copy",
+      "author": "Taylor Reed",
+      "genre": "Biography",
+      "price": 19.00,
+      "stock_status": "in_stock",
+      "description": "",
+      "rating": 4.2,
+      "promotional_tag": null
+    }
+  },
+  {
+    "case": "negative-price",
+    "record": {
+      "book_id": "RB-INVALID-PRICE",
+      "title": "A Book with an Invalid Price",
+      "author": "Morgan Lee",
+      "genre": "History",
+      "price": -1.00,
+      "stock_status": "in_stock",
+      "description": "This record should be rejected because price cannot be negative.",
+      "rating": 3.9,
+      "promotional_tag": "Featured"
+    }
+  }
+]

@@ -1,0 +1,46 @@
+[
+  {
+    "book_id": "RB-001",
+    "title": "The Cartographer's Lantern",
+    "author": "Mara Ellison",
+    "genre": "Historical Fiction",
+    "price": 18.99,
+    "stock_status": "in_stock",
+    "description": "A richly imagined story about maps, memory, and the people who redraw the boundaries of home.",
+    "rating": 4.7,
+    "promotional_tag": "Staff Pick"
+  },
+  {
+    "book_id": "RB-MIXED-BAD-STOCK",
+    "title": "A Book with an Unclear Status",
+    "author": "Robin Vale",
+    "genre": "Mystery",
+    "price": 15.99,
+    "stock_status": "available",
+    "description": "This record should be rejected because its availability value is not canonical.",
+    "rating": 4.1,
+    "promotional_tag": null
+  },
+  {
+    "book_id": "RB-002",
+    "title": "Small Hours in Orbit",
+    "author": "Jon Bell",
+    "genre": "Science Fiction",
+    "price": 16.5,
+    "stock_status": "low_stock",
+    "description": "A character-driven space adventure about friendship, difficult choices, and finding a way back.",
+    "rating": 4.4,
+    "promotional_tag": "New Release"
+  },
+  {
+    "book_id": "RB-MIXED-BAD-RATING",
+    "title": "A Rating Outside the Contract",
+    "author": "Casey Rowan",
+    "genre": "Romance",
+    "price": 17.5,
+    "stock_status": "in_stock",
+    "description": "This record should be rejected because its rating is above the inclusive five-point scale.",
+    "rating": 5.1,
+    "promotional_tag": "Featured"
+  }
+]
