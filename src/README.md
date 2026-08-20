@@ -14,6 +14,7 @@ The current implementation layers are:
 - `generation/drafts.py` — creates deterministic promotional-description, social-media, and email-campaign drafts from validated records.
 - `orchestration.py` — coordinates catalog loading, per-record validation, rejected-record diagnostics, and draft generation.
 - `cli.py` and `__main__.py` — provide a local JSON CLI seam for running the catalog workflow.
+- `api.py` — provides the v0.1 `/health` and `/generate` HTTP adapter over orchestration.
 
 External AI generation, APIs, user interfaces, and publishing workflows are intentionally out of scope.
 
@@ -21,4 +22,10 @@ Run the local CLI with:
 
 ```bash
 PYTHONPATH=src python3 -m riverside_marketing data/fixtures/books.mixed.json
+```
+
+Run the local HTTP API with:
+
+```bash
+PYTHONPATH=src uvicorn riverside_marketing.api:app --reload
 ```

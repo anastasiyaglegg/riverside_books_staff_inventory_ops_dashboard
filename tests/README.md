@@ -13,6 +13,7 @@ Current coverage includes:
 - all-valid, mixed, and all-invalid catalog orchestration;
 - rejected-record diagnostics and generation isolation for invalid records.
 - CLI success, fatal file errors, rejected-record output, and stable JSON serialization.
+- HTTP health, generation, malformed-request, deterministic-response, and validation-success behavior.
 
 External AI generation, APIs, channel publishing, and review workflows are not tested because they have not been implemented.
 
