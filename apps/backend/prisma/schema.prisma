@@ -55,6 +55,7 @@ model Customer {
   createdAt         DateTime             @default(now()) @map("created_at")
   orders            Order[]
   loyaltyTx         LoyaltyTransaction[]
+  eventTickets      EventTicket[]
 
   @@map("customers")
 }
@@ -88,14 +89,28 @@ model OrderItem {
 }
 
 model Event {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   title       String
   description String?
-  eventDate   DateTime @map("event_date")
+  eventDate   DateTime      @map("event_date")
   capacity    Int?
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  tickets     EventTicket[]
 
   @@map("events")
+}
+
+model EventTicket {
+  id         String   @id @default(uuid())
+  eventId    String   @map("event_id")
+  event      Event    @relation(fields: [eventId], references: [id])
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id])
+  // "reserved" | "attended" | "cancelled"
+  status     String   @default("reserved")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("event_tickets")
 }
 
 model LoyaltyTransaction {
