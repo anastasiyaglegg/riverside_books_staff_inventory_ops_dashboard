@@ -65,14 +65,19 @@ DIRECT_URL=$(grep DIRECT_URL .env.test | cut -d= -f2) \
 npx prisma migrate deploy
 ```
 
-Optionally, seed some sample data (8 books/inventory, 4 customers with loyalty history,
-3 orders in different statuses, 3 events, 4 store policies) so the API isn't empty:
+Optionally, seed realistic sample data (~211 books/inventory across every genre and
+stock state, 50 customers with loyalty history, 80 orders across every status, 15
+events, 8 store policies) so the app doesn't look like an empty demo:
 
 ```
 npm run prisma:seed
 ```
 
-Safe to re-run -- it no-ops if any books already exist rather than creating duplicates.
+**This is destructive on every run**: it clears and rebuilds books, inventory,
+customers, orders, order items, loyalty transactions, events, and store policies from
+scratch -- it does not append or skip. It deliberately never touches `staff_users`
+beyond upserting two bookseller rows by name, since that table holds the real
+Supabase Auth-linked owner account and wiping it would break login.
 
 ## Running it
 

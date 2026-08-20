@@ -3,108 +3,434 @@ import { deriveStockStatus } from "../lib/inventory";
 
 const prisma = new PrismaClient();
 
-const BOOKS = [
-  {
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    isbn: "9780743273565",
-    priceCents: 1299,
-    category: "fiction",
-    quantityOnHand: 15,
-    reorderThreshold: 3,
-  },
-  {
-    title: "Where the Crawdads Sing",
-    author: "Delia Owens",
-    isbn: "9780735219090",
-    priceCents: 1699,
-    category: "fiction",
-    quantityOnHand: 2,
-    reorderThreshold: 3,
-  },
-  {
-    title: "Atomic Habits",
-    author: "James Clear",
-    isbn: "9780735211292",
-    priceCents: 1800,
-    category: "nonfiction",
-    quantityOnHand: 0,
-    reorderThreshold: 2,
-  },
-  {
-    title: "Dune",
-    author: "Frank Herbert",
-    isbn: "9780441013593",
-    priceCents: 1999,
-    category: "sci-fi",
-    quantityOnHand: 8,
-    reorderThreshold: 2,
-  },
-  {
-    title: "The Very Hungry Caterpillar",
-    author: "Eric Carle",
-    isbn: "9780399226908",
-    priceCents: 899,
-    category: "childrens",
-    quantityOnHand: 20,
-    reorderThreshold: 5,
-  },
-  {
-    title: "Educated",
-    author: "Tara Westover",
-    isbn: "9780399590504",
-    priceCents: 1700,
-    category: "memoir",
-    quantityOnHand: 1,
-    reorderThreshold: 2,
-  },
-  {
-    title: "Mystery at Riverside",
-    author: "J. Alden Cole",
-    isbn: "9780000000017",
-    priceCents: 1499,
-    category: "mystery",
-    quantityOnHand: 5,
-    reorderThreshold: 2,
-  },
-  {
-    title: "The Silent Patient",
-    author: "Alex Michaelides",
-    isbn: "9781250301697",
-    priceCents: 1599,
-    category: "mystery",
-    quantityOnHand: 0,
-    reorderThreshold: 3,
-  },
-] as const;
+/**
+ * Reseeds the catalog/customer/order/event/policy tables with a much larger,
+ * realistic-feeling dataset (~200 books) so the app doesn't look like an empty
+ * demo. Unlike the original version of this script, this one is DESTRUCTIVE:
+ * it clears books/inventory/customers/orders/order_items/loyalty_transactions/
+ * events/store_policies every run and rebuilds them from scratch.
+ *
+ * It deliberately never touches `staff_users` beyond upserting two bookseller
+ * rows by name -- that table holds the real Supabase Auth-linked owner account
+ * (owners@riversidebooks.local), and wiping it would break login.
+ */
 
-const CUSTOMERS = [
-  { name: "Jane Doe", email: "jane.doe@example.com", phone: null, loyaltyStampCount: 4 },
-  { name: "Marcus Lee", email: "marcus.lee@example.com", phone: null, loyaltyStampCount: 10 },
-  { name: "Priya Patel", email: "priya.patel@example.com", phone: null, loyaltyStampCount: 0 },
-  { name: "Sam Rivera", email: null, phone: "555-0142", loyaltyStampCount: 7 },
-] as const;
+// Real, well-known titles across genres -- not generated placeholders -- so the
+// catalog reads like an actual bookstore. ISBNs below are synthetic/sequential,
+// not real industry-assigned numbers; only used here to exercise the unique
+// constraint.
+const BOOK_TITLES: [title: string, author: string, category: string][] = [
+  // Fiction
+  ["The Great Gatsby", "F. Scott Fitzgerald", "fiction"],
+  ["To Kill a Mockingbird", "Harper Lee", "fiction"],
+  ["1984", "George Orwell", "fiction"],
+  ["Pride and Prejudice", "Jane Austen", "fiction"],
+  ["The Catcher in the Rye", "J.D. Salinger", "fiction"],
+  ["Brave New World", "Aldous Huxley", "fiction"],
+  ["The Kite Runner", "Khaled Hosseini", "fiction"],
+  ["Life of Pi", "Yann Martel", "fiction"],
+  ["The Book Thief", "Markus Zusak", "fiction"],
+  ["The Road", "Cormac McCarthy", "fiction"],
+  ["Beloved", "Toni Morrison", "fiction"],
+  ["Slaughterhouse-Five", "Kurt Vonnegut", "fiction"],
+  ["One Hundred Years of Solitude", "Gabriel García Márquez", "fiction"],
+  ["The Alchemist", "Paulo Coelho", "fiction"],
+  ["The Bell Jar", "Sylvia Plath", "fiction"],
+  ["Norwegian Wood", "Haruki Murakami", "fiction"],
+  ["The Remains of the Day", "Kazuo Ishiguro", "fiction"],
+  ["Never Let Me Go", "Kazuo Ishiguro", "fiction"],
+  ["White Teeth", "Zadie Smith", "fiction"],
+  ["Middlesex", "Jeffrey Eugenides", "fiction"],
+  ["The Corrections", "Jonathan Franzen", "fiction"],
+  ["Freedom", "Jonathan Franzen", "fiction"],
+  ["A Little Life", "Hanya Yanagihara", "fiction"],
+  ["The Goldfinch", "Donna Tartt", "fiction"],
+  ["The Secret History", "Donna Tartt", "fiction"],
+  ["Circe", "Madeline Miller", "fiction"],
+  ["The Song of Achilles", "Madeline Miller", "fiction"],
+  ["Piranesi", "Susanna Clarke", "fiction"],
+  ["Klara and the Sun", "Kazuo Ishiguro", "fiction"],
+  ["Cloud Cuckoo Land", "Anthony Doerr", "fiction"],
+  ["All the Light We Cannot See", "Anthony Doerr", "fiction"],
+  ["Where the Crawdads Sing", "Delia Owens", "fiction"],
+  ["Lessons in Chemistry", "Bonnie Garmus", "fiction"],
+  ["Demon Copperhead", "Barbara Kingsolver", "fiction"],
+  ["Tomorrow, and Tomorrow, and Tomorrow", "Gabrielle Zevin", "fiction"],
+  // Mystery / Thriller
+  ["The Silent Patient", "Alex Michaelides", "mystery"],
+  ["Gone Girl", "Gillian Flynn", "mystery"],
+  ["The Girl with the Dragon Tattoo", "Stieg Larsson", "mystery"],
+  ["In the Woods", "Tana French", "mystery"],
+  ["Big Little Lies", "Liane Moriarty", "mystery"],
+  ["The Thursday Murder Club", "Richard Osman", "mystery"],
+  ["The Guest List", "Lucy Foley", "mystery"],
+  ["The Woman in the Window", "A.J. Finn", "mystery"],
+  ["Sharp Objects", "Gillian Flynn", "mystery"],
+  ["And Then There Were None", "Agatha Christie", "mystery"],
+  ["The Da Vinci Code", "Dan Brown", "mystery"],
+  ["The Girl on the Train", "Paula Hawkins", "mystery"],
+  ["Rebecca", "Daphne du Maurier", "mystery"],
+  ["The Maltese Falcon", "Dashiell Hammett", "mystery"],
+  ["The Talented Mr. Ripley", "Patricia Highsmith", "mystery"],
+  ["Mystic River", "Dennis Lehane", "mystery"],
+  ["The Cuckoo's Calling", "Robert Galbraith", "mystery"],
+  ["The No. 1 Ladies' Detective Agency", "Alexander McCall Smith", "mystery"],
+  ["Death on the Nile", "Agatha Christie", "mystery"],
+  ["Murder on the Orient Express", "Agatha Christie", "mystery"],
+  ["Mystery at Riverside", "J. Alden Cole", "mystery"],
+  ["The Maid", "Nita Prose", "mystery"],
+  // Sci-Fi / Fantasy
+  ["Dune", "Frank Herbert", "sci-fi"],
+  ["Foundation", "Isaac Asimov", "sci-fi"],
+  ["Neuromancer", "William Gibson", "sci-fi"],
+  ["Snow Crash", "Neal Stephenson", "sci-fi"],
+  ["The Left Hand of Darkness", "Ursula K. Le Guin", "sci-fi"],
+  ["Ender's Game", "Orson Scott Card", "sci-fi"],
+  ["The Hobbit", "J.R.R. Tolkien", "fantasy"],
+  ["The Fellowship of the Ring", "J.R.R. Tolkien", "fantasy"],
+  ["The Name of the Wind", "Patrick Rothfuss", "fantasy"],
+  ["Mistborn", "Brandon Sanderson", "fantasy"],
+  ["The Way of Kings", "Brandon Sanderson", "fantasy"],
+  ["A Game of Thrones", "George R.R. Martin", "fantasy"],
+  ["The Hunger Games", "Suzanne Collins", "sci-fi"],
+  ["Ready Player One", "Ernest Cline", "sci-fi"],
+  ["Project Hail Mary", "Andy Weir", "sci-fi"],
+  ["The Martian", "Andy Weir", "sci-fi"],
+  ["Station Eleven", "Emily St. John Mandel", "sci-fi"],
+  ["The Handmaid's Tale", "Margaret Atwood", "sci-fi"],
+  ["Fahrenheit 451", "Ray Bradbury", "sci-fi"],
+  ["Do Androids Dream of Electric Sheep?", "Philip K. Dick", "sci-fi"],
+  ["The Three-Body Problem", "Liu Cixin", "sci-fi"],
+  ["Children of Time", "Adrian Tchaikovsky", "sci-fi"],
+  ["The Fifth Season", "N.K. Jemisin", "fantasy"],
+  ["American Gods", "Neil Gaiman", "fantasy"],
+  ["Good Omens", "Terry Pratchett and Neil Gaiman", "fantasy"],
+  ["The Priory of the Orange Tree", "Samantha Shannon", "fantasy"],
+  // Nonfiction
+  ["Atomic Habits", "James Clear", "nonfiction"],
+  ["Sapiens", "Yuval Noah Harari", "nonfiction"],
+  ["Thinking, Fast and Slow", "Daniel Kahneman", "nonfiction"],
+  ["The Power of Habit", "Charles Duhigg", "nonfiction"],
+  ["Outliers", "Malcolm Gladwell", "nonfiction"],
+  ["Quiet", "Susan Cain", "nonfiction"],
+  ["Grit", "Angela Duckworth", "nonfiction"],
+  ["Deep Work", "Cal Newport", "nonfiction"],
+  ["The Body Keeps the Score", "Bessel van der Kolk", "nonfiction"],
+  ["Braiding Sweetgrass", "Robin Wall Kimmerer", "nonfiction"],
+  ["Just Mercy", "Bryan Stevenson", "nonfiction"],
+  ["The Omnivore's Dilemma", "Michael Pollan", "nonfiction"],
+  ["In Defense of Food", "Michael Pollan", "nonfiction"],
+  ["Guns, Germs, and Steel", "Jared Diamond", "nonfiction"],
+  ["A Brief History of Time", "Stephen Hawking", "nonfiction"],
+  ["The Sixth Extinction", "Elizabeth Kolbert", "nonfiction"],
+  ["Silent Spring", "Rachel Carson", "nonfiction"],
+  ["Between the World and Me", "Ta-Nehisi Coates", "nonfiction"],
+  ["Stiff", "Mary Roach", "nonfiction"],
+  ["The Immortal Life of Henrietta Lacks", "Rebecca Skloot", "nonfiction"],
+  // Memoir / Biography
+  ["Educated", "Tara Westover", "memoir"],
+  ["Wild", "Cheryl Strayed", "memoir"],
+  ["Born a Crime", "Trevor Noah", "memoir"],
+  ["Becoming", "Michelle Obama", "memoir"],
+  ["Know My Name", "Chanel Miller", "memoir"],
+  ["Untamed", "Glennon Doyle", "memoir"],
+  ["When Breath Becomes Air", "Paul Kalanithi", "memoir"],
+  ["The Glass Castle", "Jeannette Walls", "memoir"],
+  ["Eat, Pray, Love", "Elizabeth Gilbert", "memoir"],
+  ["Bossypants", "Tina Fey", "memoir"],
+  ["Steve Jobs", "Walter Isaacson", "memoir"],
+  ["Alexander Hamilton", "Ron Chernow", "memoir"],
+  ["The Diary of a Young Girl", "Anne Frank", "memoir"],
+  ["Night", "Elie Wiesel", "memoir"],
+  ["A Promised Land", "Barack Obama", "memoir"],
+  // Romance
+  ["Beach Read", "Emily Henry", "romance"],
+  ["The Hating Game", "Sally Thorne", "romance"],
+  ["People We Meet on Vacation", "Emily Henry", "romance"],
+  ["Red, White & Royal Blue", "Casey McQuiston", "romance"],
+  ["It Ends with Us", "Colleen Hoover", "romance"],
+  ["Book Lovers", "Emily Henry", "romance"],
+  ["The Kiss Quotient", "Helen Hoang", "romance"],
+  ["Outlander", "Diana Gabaldon", "romance"],
+  ["The Notebook", "Nicholas Sparks", "romance"],
+  ["Me Before You", "Jojo Moyes", "romance"],
+  ["Normal People", "Sally Rooney", "romance"],
+  ["One Day", "David Nicholls", "romance"],
+  ["Eleanor Oliphant Is Completely Fine", "Gail Honeyman", "romance"],
+  ["The Rosie Project", "Graeme Simsion", "romance"],
+  // Young Adult
+  ["The Fault in Our Stars", "John Green", "young-adult"],
+  ["Divergent", "Veronica Roth", "young-adult"],
+  ["The Perks of Being a Wallflower", "Stephen Chbosky", "young-adult"],
+  ["Speak", "Laurie Halse Anderson", "young-adult"],
+  ["Eleanor & Park", "Rainbow Rowell", "young-adult"],
+  ["Six of Crows", "Leigh Bardugo", "young-adult"],
+  ["The Hate U Give", "Angie Thomas", "young-adult"],
+  ["Wonder", "R.J. Palacio", "young-adult"],
+  [
+    "Aristotle and Dante Discover the Secrets of the Universe",
+    "Benjamin Alire Sáenz",
+    "young-adult",
+  ],
+  ["Turtles All the Way Down", "John Green", "young-adult"],
+  ["We Were Liars", "E. Lockhart", "young-adult"],
+  ["Legend", "Marie Lu", "young-adult"],
+  ["Red Queen", "Victoria Aveyard", "young-adult"],
+  ["Shatter Me", "Tahereh Mafi", "young-adult"],
+  // Children's
+  ["The Very Hungry Caterpillar", "Eric Carle", "childrens"],
+  ["Where the Wild Things Are", "Maurice Sendak", "childrens"],
+  ["Charlotte's Web", "E.B. White", "childrens"],
+  ["Goodnight Moon", "Margaret Wise Brown", "childrens"],
+  ["The Giving Tree", "Shel Silverstein", "childrens"],
+  ["Matilda", "Roald Dahl", "childrens"],
+  ["Charlie and the Chocolate Factory", "Roald Dahl", "childrens"],
+  ["James and the Giant Peach", "Roald Dahl", "childrens"],
+  ["The Cat in the Hat", "Dr. Seuss", "childrens"],
+  ["Green Eggs and Ham", "Dr. Seuss", "childrens"],
+  ["Corduroy", "Don Freeman", "childrens"],
+  ["Make Way for Ducklings", "Robert McCloskey", "childrens"],
+  ["The Snowy Day", "Ezra Jack Keats", "childrens"],
+  ["Frog and Toad Are Friends", "Arnold Lobel", "childrens"],
+  ["Because of Winn-Dixie", "Kate DiCamillo", "childrens"],
+  ["The Tale of Peter Rabbit", "Beatrix Potter", "childrens"],
+  // Classic Literature
+  ["Moby-Dick", "Herman Melville", "classics"],
+  ["War and Peace", "Leo Tolstoy", "classics"],
+  ["Anna Karenina", "Leo Tolstoy", "classics"],
+  ["Crime and Punishment", "Fyodor Dostoevsky", "classics"],
+  ["Jane Eyre", "Charlotte Brontë", "classics"],
+  ["Wuthering Heights", "Emily Brontë", "classics"],
+  ["Great Expectations", "Charles Dickens", "classics"],
+  ["A Tale of Two Cities", "Charles Dickens", "classics"],
+  ["Don Quixote", "Miguel de Cervantes", "classics"],
+  ["The Odyssey", "Homer", "classics"],
+  ["The Iliad", "Homer", "classics"],
+  ["Frankenstein", "Mary Shelley", "classics"],
+  ["Dracula", "Bram Stoker", "classics"],
+  ["The Picture of Dorian Gray", "Oscar Wilde", "classics"],
+  ["Heart of Darkness", "Joseph Conrad", "classics"],
+  ["The Scarlet Letter", "Nathaniel Hawthorne", "classics"],
+  ["The Grapes of Wrath", "John Steinbeck", "classics"],
+  ["East of Eden", "John Steinbeck", "classics"],
+  ["Of Mice and Men", "John Steinbeck", "classics"],
+  ["The Sun Also Rises", "Ernest Hemingway", "classics"],
+  ["A Farewell to Arms", "Ernest Hemingway", "classics"],
+  // Business / Self-Help
+  ["Good to Great", "Jim Collins", "business"],
+  ["The Lean Startup", "Eric Ries", "business"],
+  ["Zero to One", "Peter Thiel", "business"],
+  ["The 7 Habits of Highly Effective People", "Stephen Covey", "business"],
+  ["How to Win Friends and Influence People", "Dale Carnegie", "business"],
+  ["The 4-Hour Workweek", "Timothy Ferriss", "business"],
+  ["Start with Why", "Simon Sinek", "business"],
+  ["The Innovator's Dilemma", "Clayton Christensen", "business"],
+  ["Rich Dad Poor Dad", "Robert Kiyosaki", "business"],
+  ["The Psychology of Money", "Morgan Housel", "business"],
+  ["Man's Search for Meaning", "Viktor Frankl", "business"],
+  ["Can't Hurt Me", "David Goggins", "business"],
+  ["Essentialism", "Greg McKeown", "business"],
+  // Poetry
+  ["Milk and Honey", "Rupi Kaur", "poetry"],
+  ["The Sun and Her Flowers", "Rupi Kaur", "poetry"],
+  ["Leaves of Grass", "Walt Whitman", "poetry"],
+  ["Ariel", "Sylvia Plath", "poetry"],
+  ["Devotions", "Mary Oliver", "poetry"],
+  ["Citizen", "Claudia Rankine", "poetry"],
+  ["What the Living Do", "Marie Howe", "poetry"],
+  // Cooking
+  ["Salt, Fat, Acid, Heat", "Samin Nosrat", "cooking"],
+  ["The Joy of Cooking", "Irma S. Rombauer", "cooking"],
+  ["Mastering the Art of French Cooking", "Julia Child", "cooking"],
+  ["Plenty", "Yotam Ottolenghi", "cooking"],
+  ["Six Seasons", "Joshua McFadden", "cooking"],
+  ["Cravings", "Chrissy Teigen", "cooking"],
+  ["The Food Lab", "J. Kenji López-Alt", "cooking"],
+  ["Smitten Kitchen Every Day", "Deb Perelman", "cooking"],
+];
 
-const EVENTS = [
+const FIRST_NAMES = [
+  "Jane",
+  "John",
+  "Maria",
+  "James",
+  "Priya",
+  "Marcus",
+  "Sam",
+  "Emily",
+  "Wei",
+  "Fatima",
+  "Liam",
+  "Olivia",
+  "Noah",
+  "Ava",
+  "Ethan",
+  "Sophia",
+  "Mason",
+  "Isabella",
+  "Lucas",
+  "Mia",
+  "Henry",
+  "Amara",
+  "Diego",
+  "Chen",
+  "Aisha",
+  "Omar",
+  "Grace",
+  "Leo",
+  "Nina",
+  "Kofi",
+  "Yuki",
+  "Carlos",
+  "Elena",
+  "Raj",
+  "Zara",
+  "Tom",
+  "Ruth",
+  "Dana",
+  "Kwame",
+  "Ines",
+  "Bao",
+  "Mila",
+  "Theo",
+  "Ivy",
+  "Jax",
+  "Nora",
+  "Finn",
+  "Rosa",
+  "Eli",
+  "Wren",
+];
+const LAST_NAMES = [
+  "Doe",
+  "Lee",
+  "Patel",
+  "Rivera",
+  "Smith",
+  "Johnson",
+  "Garcia",
+  "Chen",
+  "Kim",
+  "Nguyen",
+  "Brown",
+  "Davis",
+  "Miller",
+  "Wilson",
+  "Moore",
+  "Taylor",
+  "Anderson",
+  "Thomas",
+  "Jackson",
+  "White",
+  "Harris",
+  "Martin",
+  "Thompson",
+  "Young",
+  "Walker",
+  "Allen",
+  "King",
+  "Wright",
+  "Scott",
+  "Green",
+  "Baker",
+  "Adams",
+  "Nelson",
+  "Carter",
+  "Mitchell",
+  "Perez",
+  "Roberts",
+  "Turner",
+  "Phillips",
+  "Campbell",
+  "Parker",
+  "Evans",
+  "Edwards",
+  "Collins",
+  "Stewart",
+  "Sanchez",
+  "Morris",
+  "Rogers",
+  "Reed",
+  "Cook",
+];
+
+const EVENT_TEMPLATES: { title: string; description: string; capacity: number | null }[] = [
   {
     title: "Author Talk: Local Mystery Writers Night",
     description: "Meet three local mystery authors for a reading and Q&A.",
-    eventDate: new Date("2026-09-12T18:30:00.000Z"),
     capacity: 40,
   },
   {
     title: "Kids' Storytime Saturday",
     description: "Weekly storytime for ages 3-7, hosted by our booksellers.",
-    eventDate: new Date("2026-09-06T15:00:00.000Z"),
     capacity: null,
   },
   {
-    title: "Book Club: Discussing 'Educated'",
+    title: "Book Club: Contemporary Fiction",
     description: "Monthly book club meeting -- new members welcome.",
-    eventDate: new Date("2026-09-20T18:00:00.000Z"),
     capacity: 20,
   },
-] as const;
+  {
+    title: "Poetry Open Mic Night",
+    description: "Read your own work or a favorite poem -- all welcome.",
+    capacity: 30,
+  },
+  {
+    title: "Cookbook Club: Seasonal Cooking",
+    description: "Cook a recipe from this month's pick and share notes.",
+    capacity: 15,
+  },
+  {
+    title: "Sci-Fi & Fantasy Book Club",
+    description: "This month: a deep dive into world-building.",
+    capacity: 20,
+  },
+  {
+    title: "Local Author Signing",
+    description: "Meet a Riverside-area author and get your copy signed.",
+    capacity: 50,
+  },
+  {
+    title: "Teen Writers Workshop",
+    description: "A hands-on workshop for young writers ages 13-18.",
+    capacity: 12,
+  },
+  {
+    title: "Classics Book Club",
+    description: "This month: a 19th-century classic none of us have finished.",
+    capacity: 20,
+  },
+  {
+    title: "Staff Picks Night",
+    description: "Booksellers share their current favorite reads.",
+    capacity: null,
+  },
+  {
+    title: "Mystery Book Club",
+    description: "Whodunit discussion -- spoilers allowed after page 100.",
+    capacity: 20,
+  },
+  {
+    title: "Kids' Halloween Story Hour",
+    description: "Spooky (but not too spooky) stories for young readers.",
+    capacity: 25,
+  },
+  {
+    title: "Holiday Gift Guide Night",
+    description: "Staff recommendations for every reader on your list.",
+    capacity: null,
+  },
+  {
+    title: "New Year, New Shelf",
+    description: "Kick off the year with a curated reading challenge.",
+    capacity: 30,
+  },
+  {
+    title: "Nonfiction Book Club",
+    description: "This month: a deep-dive into a topic none of us knew much about.",
+    capacity: 20,
+  },
+];
 
 const POLICIES = [
   { key: "hours", value: "Mon-Sat 9am-7pm, Sun 10am-5pm" },
@@ -117,104 +443,182 @@ const POLICIES = [
     key: "loyalty_program",
     value: "Earn a stamp for every purchase; 10 stamps = $10 off your next order.",
   },
+  { key: "shipping", value: "In-store pickup only for pre-orders -- we don't ship yet." },
+  {
+    key: "gift_wrapping",
+    value: "Free gift wrapping available at checkout, no appointment needed.",
+  },
+  { key: "price_match", value: "We match listed prices from other local independent bookstores." },
+  {
+    key: "accessibility",
+    value: "Storefront is wheelchair accessible; ask staff for the accessible entrance in back.",
+  },
 ] as const;
 
-async function main() {
-  const existingBooks = await prisma.book.count();
-  if (existingBooks > 0) {
-    console.log(
-      `Skipping seed: ${existingBooks} book(s) already exist. Truncate the tables first if you want to reseed.`,
-    );
-    return;
+const ORDER_STATUSES = ["placed", "ready_for_pickup", "completed", "cancelled"] as const;
+// Weighted so most historical orders are completed, with a realistic-size active queue.
+const ORDER_STATUS_WEIGHTS = [12, 10, 68, 10];
+
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]!;
+}
+
+function weightedStatus(): (typeof ORDER_STATUSES)[number] {
+  const total = ORDER_STATUS_WEIGHTS.reduce((a, b) => a + b, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < ORDER_STATUSES.length; i++) {
+    roll -= ORDER_STATUS_WEIGHTS[i]!;
+    if (roll <= 0) return ORDER_STATUSES[i]!;
   }
+  return "completed";
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+async function resetSeedTables() {
+  // Never touches staff_users here -- see the module comment.
+  await prisma.loyaltyTransaction.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.inventory.deleteMany();
+  await prisma.book.deleteMany();
+  await prisma.customer.deleteMany();
+  await prisma.event.deleteMany();
+  await prisma.storePolicy.deleteMany();
+}
+
+async function main() {
+  console.log(`Resetting seed tables (staff_users is left untouched)...`);
+  await resetSeedTables();
+
+  const booksellerNames = [
+    { name: "Jordan Ruiz", role: "bookseller" },
+    { name: "Alex Kim", role: "bookseller" },
+  ];
+  for (const b of booksellerNames) {
+    const existing = await prisma.staffUser.findFirst({ where: { name: b.name } });
+    if (!existing) {
+      await prisma.staffUser.create({ data: b });
+    }
+  }
+  const staff = await prisma.staffUser.findMany();
+  console.log(`${staff.length} staff user(s) on file (owner + booksellers).`);
 
   const books: Book[] = [];
-  for (const b of BOOKS) {
-    const { quantityOnHand, reorderThreshold, ...bookFields } = b;
+  for (let i = 0; i < BOOK_TITLES.length; i++) {
+    const entry = BOOK_TITLES[i]!;
+    const [title, author, category] = entry;
+    const priceCents = 999 + Math.floor(Math.random() * 2000);
+    const quantityOnHand = Math.floor(Math.random() * 25);
+    const reorderThreshold = 2 + Math.floor(Math.random() * 3);
+    const isbn = `978${String(1000000 + i).padStart(10, "0")}`;
+    const adjustedBy = Math.random() < 0.35 ? pick(staff).id : null;
+
     const book = await prisma.book.create({
       data: {
-        ...bookFields,
+        title,
+        author,
+        category,
+        isbn,
+        priceCents,
         inventory: {
           create: {
             quantityOnHand,
             reorderThreshold,
             status: deriveStockStatus(quantityOnHand, reorderThreshold),
+            lastAdjustedById: adjustedBy,
           },
         },
       },
     });
     books.push(book);
+    if ((i + 1) % 50 === 0) console.log(`  ...${i + 1}/${BOOK_TITLES.length} books`);
   }
   console.log(`Seeded ${books.length} books with inventory.`);
 
   const customers: Customer[] = [];
-  for (const c of CUSTOMERS) {
-    const customer = await prisma.customer.create({ data: c });
+  for (let i = 0; i < FIRST_NAMES.length; i++) {
+    const first = FIRST_NAMES[i]!;
+    const last = LAST_NAMES[i]!;
+    const loyaltyStampCount = Math.floor(Math.random() * 15);
+    const createdAt = daysAgo(Math.floor(Math.random() * 180));
+    const useEmail = Math.random() > 0.1;
+    const customer = await prisma.customer.create({
+      data: {
+        name: `${first} ${last}`,
+        email: useEmail ? `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com` : null,
+        phone: useEmail ? null : `555-${String(1000 + i).padStart(4, "0")}`,
+        loyaltyStampCount,
+        createdAt,
+      },
+    });
     customers.push(customer);
-    if (c.loyaltyStampCount > 0) {
+    if (loyaltyStampCount > 0) {
       await prisma.loyaltyTransaction.createMany({
-        data: Array.from({ length: c.loyaltyStampCount }, () => ({
+        data: Array.from({ length: loyaltyStampCount }, () => ({
           customerId: customer.id,
           type: "earn",
+          createdAt,
         })),
       });
     }
   }
   console.log(`Seeded ${customers.length} customers with loyalty history.`);
 
-  function findBook(title: string) {
-    const book = books.find((b) => b.title === title);
-    if (!book) throw new Error(`Seed error: expected book "${title}" to exist`);
-    return book;
-  }
-  function findCustomer(name: string) {
-    const customer = customers.find((c) => c.name === name);
-    if (!customer) throw new Error(`Seed error: expected customer "${name}" to exist`);
-    return customer;
-  }
+  const ORDER_COUNT = 80;
+  for (let i = 0; i < ORDER_COUNT; i++) {
+    const customer = pick(customers);
+    const itemCount = 1 + Math.floor(Math.random() * 3);
+    const items = Array.from({ length: itemCount }, () => {
+      const book = pick(books);
+      const quantity = 1 + Math.floor(Math.random() * 2);
+      return { bookId: book.id, quantity, unitPriceCents: book.priceCents };
+    });
+    const totalCents = items.reduce((sum, it) => sum + it.unitPriceCents * it.quantity, 0);
+    const status = weightedStatus();
+    // Skew recent so "pre-orders this week" has a meaningful count; active
+    // (placed/ready_for_pickup) orders lean recent, completed/cancelled spread further back.
+    const age =
+      status === "placed" || status === "ready_for_pickup"
+        ? Math.random() * 10
+        : Math.random() * 90;
+    const createdAt = daysAgo(age);
+    const paymentStatus =
+      status === "completed"
+        ? pick(["paid_online", "pay_in_store"] as const)
+        : pick(["unpaid", "pay_in_store"] as const);
 
-  const gatsby = findBook("The Great Gatsby");
-  const dune = findBook("Dune");
-  const atomicHabits = findBook("Atomic Habits");
-  const jane = findCustomer("Jane Doe");
-  const marcus = findCustomer("Marcus Lee");
-  const priya = findCustomer("Priya Patel");
-
-  await prisma.order.create({
-    data: {
-      customerId: jane.id,
-      status: "placed",
-      paymentStatus: "pay_in_store",
-      totalCents: dune.priceCents,
-      items: { create: [{ bookId: dune.id, quantity: 1, unitPriceCents: dune.priceCents }] },
-    },
-  });
-
-  await prisma.order.create({
-    data: {
-      customerId: marcus.id,
-      status: "ready_for_pickup",
-      paymentStatus: "paid_online",
-      totalCents: gatsby.priceCents * 2,
-      items: { create: [{ bookId: gatsby.id, quantity: 2, unitPriceCents: gatsby.priceCents }] },
-    },
-  });
-
-  await prisma.order.create({
-    data: {
-      customerId: priya.id,
-      status: "completed",
-      paymentStatus: "paid_online",
-      totalCents: atomicHabits.priceCents,
-      items: {
-        create: [{ bookId: atomicHabits.id, quantity: 1, unitPriceCents: atomicHabits.priceCents }],
+    await prisma.order.create({
+      data: {
+        customerId: customer.id,
+        status,
+        paymentStatus,
+        totalCents,
+        createdAt,
+        updatedAt: createdAt,
+        items: { create: items },
       },
-    },
-  });
-  console.log("Seeded 3 orders (placed, ready_for_pickup, completed).");
+    });
+  }
+  console.log(`Seeded ${ORDER_COUNT} orders across placed/ready_for_pickup/completed/cancelled.`);
 
-  await prisma.event.createMany({ data: EVENTS.map((e) => ({ ...e })) });
-  console.log(`Seeded ${EVENTS.length} events.`);
+  const now = Date.now();
+  for (let i = 0; i < EVENT_TEMPLATES.length; i++) {
+    const t = EVENT_TEMPLATES[i]!;
+    // Spread from ~6 weeks in the past to ~4 months in the future.
+    const offsetDays = -42 + i * 12;
+    await prisma.event.create({
+      data: {
+        title: t.title,
+        description: t.description,
+        capacity: t.capacity,
+        eventDate: new Date(now + offsetDays * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+  console.log(`Seeded ${EVENT_TEMPLATES.length} events.`);
 
   await prisma.storePolicy.createMany({ data: POLICIES.map((p) => ({ ...p })) });
   console.log(`Seeded ${POLICIES.length} store policies.`);
