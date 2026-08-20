@@ -3,6 +3,11 @@ import { z } from "zod";
 export const listBooksQuerySchema = z.object({
   q: z.string().optional(),
   category: z.string().optional(),
+  // Both optional and independent -- omitting both preserves the original
+  // "return everything matching q/category" behavior for existing callers
+  // (e.g. Product C assembling full-catalog chat context).
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 export const createBookSchema = z.object({

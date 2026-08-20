@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail, failValidation } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { deriveStockStatus } from "@/lib/inventory";
+import { buildPaginationMeta, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { listBooksQuerySchema, createBookSchema } from "@/lib/validation/books";
 
 export async function GET(request: Request) {
@@ -10,23 +11,46 @@ export async function GET(request: Request) {
   if (!parsed.success) {
     return fail("Invalid query parameters", 400, "INVALID_QUERY");
   }
-  const { q, category } = parsed.data;
+  const { q, category, page, limit } = parsed.data;
 
-  const books = await prisma.book.findMany({
-    where: {
-      ...(q && {
-        OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { author: { contains: q, mode: "insensitive" } },
-          { isbn: { contains: q, mode: "insensitive" } },
-        ],
-      }),
-      ...(category && { category }),
-    },
-    include: { inventory: true },
-  });
+  const where = {
+    ...(q && {
+      OR: [
+        { title: { contains: q, mode: "insensitive" as const } },
+        { author: { contains: q, mode: "insensitive" as const } },
+        { isbn: { contains: q, mode: "insensitive" as const } },
+      ],
+    }),
+    ...(category && { category }),
+  };
 
-  return ok(books);
+  // page/limit are both optional and independent of one another -- passing
+  // neither preserves the original "return every match" behavior so existing
+  // callers (e.g. Product C assembling full-catalog chat context) don't break.
+  if (page === undefined && limit === undefined) {
+    const books = await prisma.book.findMany({
+      where,
+      include: { inventory: true },
+      orderBy: { title: "asc" },
+    });
+    return ok(books);
+  }
+
+  const currentPage = page ?? 1;
+  const pageSize = limit ?? DEFAULT_PAGE_SIZE;
+
+  const [books, totalItems] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      include: { inventory: true },
+      orderBy: { title: "asc" },
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.book.count({ where }),
+  ]);
+
+  return ok(books, 200, buildPaginationMeta(currentPage, pageSize, totalItems));
 }
 
 export async function POST(request: Request) {
