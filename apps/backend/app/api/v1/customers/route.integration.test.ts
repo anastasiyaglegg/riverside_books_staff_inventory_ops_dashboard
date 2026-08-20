@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 vi.mock("@/lib/auth", () => ({ requireStaffSession: vi.fn() }));
 
 import { requireStaffSession } from "@/lib/auth";
-import { GET } from "./route";
+import { GET, POST } from "./route";
 import { prisma } from "@/lib/prisma";
 import { resetDb } from "@/test/db-helpers";
 
@@ -42,5 +42,43 @@ describe("GET /api/v1/customers", () => {
     vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
     const response = await GET(new Request("http://localhost/api/v1/customers"));
     expect(response.status).toBe(401);
+  });
+});
+
+describe("POST /api/v1/customers", () => {
+  it("creates a customer profile, without auth", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/v1/customers", {
+        method: "POST",
+        body: JSON.stringify({ name: "Jane Doe", email: "jane@example.com" }),
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.data.name).toBe("Jane Doe");
+    expect(body.data.loyaltyStampCount).toBe(0);
+  });
+
+  it("returns 400 when neither email nor phone is provided", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/v1/customers", {
+        method: "POST",
+        body: JSON.stringify({ name: "Jane Doe" }),
+      }),
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 409 for a duplicate email", async () => {
+    await prisma.customer.create({ data: { name: "Existing", email: "jane@example.com" } });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/customers", {
+        method: "POST",
+        body: JSON.stringify({ name: "Jane Doe", email: "jane@example.com" }),
+      }),
+    );
+    expect(response.status).toBe(409);
   });
 });

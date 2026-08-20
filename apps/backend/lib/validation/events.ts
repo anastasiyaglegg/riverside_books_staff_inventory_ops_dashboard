@@ -16,3 +16,13 @@ export const updateEventSchema = z
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, { message: "No fields to update" });
+
+export const reserveTicketSchema = z
+  .object({
+    customerName: z.string().min(1),
+    customerEmail: z.string().email().optional(),
+    customerPhone: z.string().min(1).optional(),
+  })
+  .refine((data) => data.customerEmail || data.customerPhone, {
+    message: "Either customerEmail or customerPhone is required",
+  });

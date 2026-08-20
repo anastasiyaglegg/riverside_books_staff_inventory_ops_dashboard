@@ -110,6 +110,18 @@ model Event {
   createdAt   DateTime @default(now())
 }
 
+// Added when POST /events/:id/tickets was built for Product A -- not in the
+// original table.
+model EventTicket {
+  id         String   @id @default(uuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  status     String   // "reserved" | "attended" | "cancelled"
+  createdAt  DateTime @default(now())
+}
+
 model LoyaltyTransaction {
   id             String   @id @default(uuid())
   customerId     String
@@ -139,6 +151,8 @@ model StaffUser {
 
 All under `/api/v1`. Staff-only routes call `requireStaffSession()` (see the SKILL.md auth pattern) and return `401` via the standard `fail(...)` helper if unauthenticated. Never trust a role/user id from the client body.
 
+This started as a backend+staff-dashboard-only table (Product A's own endpoints were explicitly out of scope). Once Product A started being built against this same shared backend, several of its endpoints got added here too -- see the "Public" rows below, and the note under each on why staff auth was dropped where it originally existed.
+
 | Method | Route | Auth | Description |
 |---|---|---|---|
 | GET | `/books` | Public | List/search catalog (`?q=`, `?category=`), joined with inventory status |
@@ -147,18 +161,23 @@ All under `/api/v1`. Staff-only routes call `requireStaffSession()` (see the SKI
 | PATCH | `/books/:id` | Staff | Edit title fields |
 | GET | `/inventory` | Staff | Full inventory view, filterable by `?status=` |
 | PATCH | `/inventory/:bookId` | Staff | Adjust `quantityOnHand`; recompute `status` server-side via `deriveStockStatus()` |
-| GET | `/orders` | Staff | List orders, filterable by `?status=` |
-| GET | `/orders/:id` | Staff | Single order detail |
+| GET | `/orders` | Staff, or Public with `?customerId=` | Without `customerId`: full staff listing, filterable by `?status=`. With `customerId`: that customer's own order history, no staff session needed |
+| POST | `/orders` | Public | Create a pre-order (Product A). Body: `{ customerName, customerEmail? or customerPhone?, items: [{ bookId, quantity }] }`. Finds-or-creates the customer by email/phone -- no prior signup required |
+| GET | `/orders/:id` | Public | Single order detail. Was staff-only; opened up so Product A can poll its own order without a customer-auth system (none exists yet) -- same "unguessable UUID" pattern as `/books/:id` |
 | PATCH | `/orders/:id/status` | Staff | Transition order status; reject invalid transitions |
 | GET | `/customers` | Staff | Search customers (`?q=` matches name/email/phone) -- added post-hoc for story B9 (Loyalty Lookup), not in the original table |
-| GET | `/customers/:id` | Staff | Customer profile incl. loyalty count |
+| POST | `/customers` | Public | Create a customer profile (Product A signup). `409` on duplicate email/phone |
+| GET | `/customers/:id` | Public | Customer profile incl. loyalty count. Was staff-only; same unguessable-UUID reasoning as `/orders/:id` |
 | POST | `/loyalty/earn` | Staff | Add a stamp; body: `{ customerId }` |
 | POST | `/loyalty/redeem` | Staff | Redeem a reward; body: `{ customerId }`; reject if balance insufficient |
 | GET | `/events` | Public | Upcoming events |
 | POST | `/events` | Staff | Create event |
 | PATCH | `/events/:id` | Staff | Edit event |
+| POST | `/events/:id/tickets` | Public | Reserve a ticket (Product A). Body: `{ customerName, customerEmail? or customerPhone? }`. Rejects with `400` once `event.capacity` is reached (cancelled tickets don't count against it); finds-or-creates the customer same as `/orders` |
 | GET | `/policies` | Public | All store policies |
 | PATCH | `/policies/:key` | Staff | Edit a policy value |
+
+**On the public-by-unguessable-UUID pattern** (`/orders/:id`, `/customers/:id`): this is an MVP tradeoff, not a real auth system. The technical spec defers real customer identity to a Supabase magic-link/OTP flow that hasn't been built. Anyone who has (or guesses) the UUID can read that order/customer record. Acceptable for now since these are hard-to-guess v4 UUIDs and the data isn't especially sensitive (no payment info), but revisit if/when real customer auth gets built.
 
 ## Shared Business Logic — Build and Unit-Test Before Wiring Routes
 

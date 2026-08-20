@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 vi.mock("@/lib/auth", () => ({ requireStaffSession: vi.fn() }));
 
 import { requireStaffSession } from "@/lib/auth";
-import { GET } from "./route";
+import { GET, POST } from "./route";
 import { prisma } from "@/lib/prisma";
 import { resetDb } from "@/test/db-helpers";
 
@@ -15,17 +15,21 @@ beforeEach(async () => {
   });
 });
 
-async function makeOrder(status: string) {
-  const customer = await prisma.customer.create({
-    data: { name: "Jane Doe", email: `${status}@example.com` },
-  });
+async function makeOrder(status: string, customerId?: string) {
+  const cid =
+    customerId ??
+    (
+      await prisma.customer.create({
+        data: { name: "Jane Doe", email: `${status}-${Date.now()}-${Math.random()}@example.com` },
+      })
+    ).id;
   return prisma.order.create({
-    data: { customerId: customer.id, status, paymentStatus: "unpaid", totalCents: 1000 },
+    data: { customerId: cid, status, paymentStatus: "unpaid", totalCents: 1000 },
   });
 }
 
 describe("GET /api/v1/orders", () => {
-  it("lists orders", async () => {
+  it("lists orders (staff)", async () => {
     await makeOrder("placed");
     await makeOrder("completed");
 
@@ -36,7 +40,7 @@ describe("GET /api/v1/orders", () => {
     expect(body.data).toHaveLength(2);
   });
 
-  it("filters by status", async () => {
+  it("filters by status (staff)", async () => {
     await makeOrder("placed");
     await makeOrder("completed");
 
@@ -47,9 +51,103 @@ describe("GET /api/v1/orders", () => {
     expect(body.data[0].status).toBe("placed");
   });
 
-  it("returns 401 when not authenticated as staff", async () => {
+  it("returns 401 when not authenticated as staff and no customerId given", async () => {
     vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
     const response = await GET(new Request("http://localhost/api/v1/orders"));
     expect(response.status).toBe(401);
+  });
+
+  it("returns just that customer's orders without auth when customerId is given", async () => {
+    vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
+    const customer = await prisma.customer.create({
+      data: { name: "Jane Doe", email: "jane@example.com" },
+    });
+    await makeOrder("placed", customer.id);
+    await makeOrder("completed");
+
+    const response = await GET(
+      new Request(`http://localhost/api/v1/orders?customerId=${customer.id}`),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].customerId).toBe(customer.id);
+  });
+});
+
+describe("POST /api/v1/orders", () => {
+  it("creates an order, finding or creating the customer by email", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Test Book", author: "A. Author", priceCents: 1500 },
+    });
+
+    const request = new Request("http://localhost/api/v1/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        customerName: "Jane Doe",
+        customerEmail: "jane@example.com",
+        items: [{ bookId: book.id, quantity: 2 }],
+      }),
+    });
+
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.data.status).toBe("placed");
+    expect(body.data.totalCents).toBe(3000);
+    expect(body.data.customer.email).toBe("jane@example.com");
+
+    const customerCount = await prisma.customer.count();
+    expect(customerCount).toBe(1);
+  });
+
+  it("reuses an existing customer with the same email instead of duplicating", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Test Book", author: "A. Author", priceCents: 1000 },
+    });
+    const existing = await prisma.customer.create({
+      data: { name: "Jane Doe", email: "jane@example.com" },
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [{ bookId: book.id, quantity: 1 }],
+        }),
+      }),
+    );
+    const body = await response.json();
+
+    expect(body.data.customerId).toBe(existing.id);
+    expect(await prisma.customer.count()).toBe(1);
+  });
+
+  it("returns 400 when neither email nor phone is provided", async () => {
+    const request = new Request("http://localhost/api/v1/orders", {
+      method: "POST",
+      body: JSON.stringify({ customerName: "Jane Doe", items: [] }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when a referenced book does not exist", async () => {
+    const request = new Request("http://localhost/api/v1/orders", {
+      method: "POST",
+      body: JSON.stringify({
+        customerName: "Jane Doe",
+        customerEmail: "jane@example.com",
+        items: [{ bookId: "00000000-0000-0000-0000-000000000000", quantity: 1 }],
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
   });
 });

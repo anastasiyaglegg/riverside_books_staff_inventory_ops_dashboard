@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 // suite stays repeatable and order-independent (testing doc §5).
 export async function resetDb() {
   await prisma.loyaltyTransaction.deleteMany();
+  await prisma.eventTicket.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.inventory.deleteMany();
