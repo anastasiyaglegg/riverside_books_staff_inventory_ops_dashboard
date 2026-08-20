@@ -36,6 +36,22 @@ class ProductDAPIv01Tests(unittest.TestCase):
             {"status": "ok", "service": "riverside-marketing"},
         )
 
+    def test_local_frontend_origin_is_allowed(self) -> None:
+        response = self.client.options(
+            "/generate",
+            headers={
+                "origin": "http://localhost:5173",
+                "access-control-request-method": "POST",
+                "access-control-request-headers": "content-type",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["access-control-allow-origin"],
+            "http://localhost:5173",
+        )
+
     def test_all_valid_catalog(self) -> None:
         response = self.client.post("/generate", json=_load_json(SAMPLE_PATH))
 

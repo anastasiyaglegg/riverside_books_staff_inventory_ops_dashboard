@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .data import DataContractError
 from .orchestration import run_catalog_generation
@@ -14,6 +16,20 @@ app = FastAPI(
     title="Riverside Marketing",
     version="0.1.0",
     description="HTTP adapter for the Riverside Books Product D workflow.",
+)
+
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+_allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("RIVERSIDE_ALLOWED_ORIGINS", _default_origins).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type"],
 )
 
 
