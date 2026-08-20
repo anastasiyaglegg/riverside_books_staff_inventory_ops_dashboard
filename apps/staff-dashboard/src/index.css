@@ -1,0 +1,374 @@
+:root {
+  --color-bg: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-border: #e0ddd6;
+  --color-text: #2b2620;
+  --color-muted: #7a746a;
+  --color-primary: #6b4226;
+  --color-primary-hover: #543219;
+  --color-danger: #b3432b;
+  --radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar-title {
+  font-weight: 600;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.navbar-link {
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.navbar-link.active,
+.navbar-link:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.page-loading {
+  padding: 24px;
+  color: var(--color-muted);
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.form,
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 480px;
+}
+
+.form label {
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-top: 8px;
+}
+
+.form input,
+.form textarea,
+.login-form input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.form button,
+.login-form button {
+  margin-top: 16px;
+  align-self: flex-start;
+}
+
+.form-inline {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-width: none;
+  margin-bottom: 24px;
+}
+
+.form-error {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.login-form {
+  background: var(--color-surface);
+  padding: 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.login-form h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.data-table th {
+  background: var(--color-bg);
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.qty-input {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-in_stock {
+  background: #e3f0e3;
+  color: #2f6b2f;
+}
+
+.badge-low_stock {
+  background: #fbe8cc;
+  color: #8a5a10;
+}
+
+.badge-out_of_stock {
+  background: #f6d9d4;
+  color: #a3341e;
+}
+
+.badge-placed {
+  background: #dde6f6;
+  color: #2c4c8a;
+}
+
+.badge-ready_for_pickup {
+  background: #fbe8cc;
+  color: #8a5a10;
+}
+
+.badge-completed {
+  background: #e3f0e3;
+  color: #2f6b2f;
+}
+
+.badge-cancelled {
+  background: #ece9e3;
+  color: var(--color-muted);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+
+.search-form input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.loyalty-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.result-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 260px;
+}
+
+.result-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.result-item.active {
+  border-color: var(--color-primary);
+}
+
+.result-empty {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.customer-detail {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-width: 260px;
+}
+
+.stamp-count {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.policy-row {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  max-width: none;
+}
+
+.policy-row textarea {
+  width: 100%;
+  min-height: 60px;
+}
+
+.snapshot-cards {
+  display: flex;
+  gap: 16px;
+}
+
+.snapshot-card {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.snapshot-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.snapshot-label {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-top: 4px;
+  text-align: center;
+}
