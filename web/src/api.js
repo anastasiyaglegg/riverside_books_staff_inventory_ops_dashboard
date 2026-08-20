@@ -1,12 +1,21 @@
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
 
 export function getApiBaseUrl() {
-  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  return (configuredBaseUrl || DEFAULT_API_BASE_URL).replace(/\/$/, "");
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/$/, "");
+  }
+
+  return import.meta.env.DEV ? LOCAL_API_BASE_URL : "";
 }
 
 export async function generateMarketingDrafts(catalog) {
-  const response = await fetch(`${getApiBaseUrl()}/generate`, {
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("The marketing service URL is not configured for this deployment.");
+  }
+
+  const response = await fetch(`${apiBaseUrl}/generate`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(catalog),
