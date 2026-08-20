@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# env
+.env
+.env.local
+.env.test
+.env*.local
+
+# next.js
+apps/*/.next/
+apps/*/out/
+
+# prisma
+apps/*/prisma/*.db
+
+# build
+apps/*/build/
+apps/*/dist/
+apps/*/*.tsbuildinfo
+
+# test / coverage
+apps/*/coverage/
+apps/*/playwright-report/
+apps/*/test-results/
+
+# logs
+npm-debug.log*
+*.log
+
+# os
+.DS_Store

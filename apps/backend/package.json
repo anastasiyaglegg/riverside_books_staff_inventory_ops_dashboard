@@ -1,0 +1,44 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "dotenv -e .env.test -- vitest run --project integration",
+    "test:e2e": "echo 'No E2E harness wired yet -- the required cross-product flows (testing doc, 09 Sec 4) need Product A + Playwright, neither exists yet' && exit 0",
+    "verify:supabase": "SUPABASE_LIFECYCLE_CONFIRM=1 dotenv -e .env.local -- vitest run --project supabase-lifecycle",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "dotenv -e .env.local -- prisma db seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "next": "15.5.23",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "@prisma/client": "6.19.0",
+    "zod": "3.25.76",
+    "@supabase/supabase-js": "2.75.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "20.19.24",
+    "@types/react": "19.2.7",
+    "prisma": "6.19.0",
+    "tsx": "4.20.6",
+    "vitest": "3.2.7",
+    "dotenv-cli": "7.4.4",
+    "eslint": "9.39.1",
+    "eslint-config-next": "15.5.23",
+    "@eslint/eslintrc": "3.3.1",
+    "prettier": "3.6.2"
+  }
+}
