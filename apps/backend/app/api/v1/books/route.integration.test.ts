@@ -52,6 +52,49 @@ describe("GET /api/v1/books", () => {
     expect(body.data).toHaveLength(1);
     expect(body.data[0].title).toBe("Mystery Book");
   });
+
+  it("omits meta and returns every match when page/limit are absent", async () => {
+    for (let i = 0; i < 3; i++) {
+      await prisma.book.create({
+        data: { title: `Book ${i}`, author: "A", priceCents: 1000, category: "fiction" },
+      });
+    }
+
+    const request = new Request("http://localhost/api/v1/books");
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(body.data).toHaveLength(3);
+    expect(body.meta).toBeUndefined();
+  });
+
+  it("paginates with page/limit and returns pagination meta", async () => {
+    for (let i = 0; i < 25; i++) {
+      await prisma.book.create({
+        data: { title: `Book ${String(i).padStart(2, "0")}`, author: "A", priceCents: 1000 },
+      });
+    }
+
+    const page1 = await (
+      await GET(new Request("http://localhost/api/v1/books?page=1&limit=20"))
+    ).json();
+    expect(page1.data).toHaveLength(20);
+    expect(page1.data[0].title).toBe("Book 00");
+    expect(page1.meta).toEqual({ page: 1, pageSize: 20, totalItems: 25, totalPages: 2 });
+
+    const page2 = await (
+      await GET(new Request("http://localhost/api/v1/books?page=2&limit=20"))
+    ).json();
+    expect(page2.data).toHaveLength(5);
+    expect(page2.data[0].title).toBe("Book 20");
+    expect(page2.meta).toEqual({ page: 2, pageSize: 20, totalItems: 25, totalPages: 2 });
+  });
+
+  it("returns 400 for an out-of-range limit", async () => {
+    const request = new Request("http://localhost/api/v1/books?limit=101");
+    const response = await GET(request);
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("POST /api/v1/books", () => {
