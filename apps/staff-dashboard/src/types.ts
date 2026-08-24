@@ -1,3 +1,11 @@
+// Mirrors PaginationMeta / buildPaginationMeta on the backend (lib/pagination.ts).
+export type PaginationMeta = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
 export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
 export type OrderStatus =
   | "placed"

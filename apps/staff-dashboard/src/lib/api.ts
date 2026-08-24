@@ -10,7 +10,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function requestWithEnvelope<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{ data: T; meta: Record<string, unknown> | undefined }> {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
 
@@ -31,11 +34,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       body.error?.code ?? null,
     );
   }
-  return body.data as T;
+  return { data: body.data as T, meta: body.meta };
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const { data } = await requestWithEnvelope<T>(path, init);
+  return data;
 }
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  // Same as `get`, but also surfaces the response envelope's `meta` (e.g.
+  // pagination info) that `get` discards.
+  getPaged: <T, M = Record<string, unknown>>(path: string) =>
+    requestWithEnvelope<T>(path) as Promise<{ data: T; meta: M }>,
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) =>
