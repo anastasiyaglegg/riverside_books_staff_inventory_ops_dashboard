@@ -15,5 +15,8 @@
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0"
+  },
+  "overrides": {
+    "jose": "5.10.0"
   }
 }

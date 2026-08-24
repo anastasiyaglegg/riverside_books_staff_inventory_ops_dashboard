@@ -27,9 +27,4 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: "/api/v1/:path*",
-  // Default (Edge) runtime bundles every matched route's dependency graph
-  // into one script, which pulled in firebase-admin (via lib/firebase-admin.ts,
-  // used by /customers/me) and crashed on load for every /api/v1/* request --
-  // not just the Firebase one. Node.js runtime avoids that shared-bundle trap.
-  runtime: "nodejs",
 };
