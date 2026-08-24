@@ -58,9 +58,10 @@ model Gift {
   category       String?
   description    String?
   imageUrl       String?  @map("image_url")
-  quantityOnHand Int      @default(0) @map("quantity_on_hand")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  quantityOnHand Int         @default(0) @map("quantity_on_hand")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  orderItems     OrderItem[]
 
   @@map("gifts")
 }
@@ -75,9 +76,10 @@ model Card {
   occasion       String?
   description    String?
   imageUrl       String?  @map("image_url")
-  quantityOnHand Int      @default(0) @map("quantity_on_hand")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  quantityOnHand Int         @default(0) @map("quantity_on_hand")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  orderItems     OrderItem[]
 
   @@map("cards")
 }
@@ -124,13 +126,21 @@ model Order {
 }
 
 model OrderItem {
-  id             String @id @default(uuid())
-  orderId        String @map("order_id")
-  order          Order  @relation(fields: [orderId], references: [id])
-  bookId         String @map("book_id")
-  book           Book   @relation(fields: [bookId], references: [id])
+  id             String  @id @default(uuid())
+  orderId        String  @map("order_id")
+  order          Order   @relation(fields: [orderId], references: [id])
+  // An order line references exactly one product, from any of the three catalogs
+  // (books, gifts, cards). Exactly one of bookId/giftId/cardId is non-null -- enforced
+  // by a CHECK constraint in the migration, since Prisma can't model "exactly one of".
+  // unitPriceCents snapshots the price at order time regardless of product type.
+  bookId         String? @map("book_id")
+  book           Book?   @relation(fields: [bookId], references: [id])
+  giftId         String? @map("gift_id")
+  gift           Gift?   @relation(fields: [giftId], references: [id])
+  cardId         String? @map("card_id")
+  card           Card?   @relation(fields: [cardId], references: [id])
   quantity       Int
-  unitPriceCents Int    @map("unit_price_cents")
+  unitPriceCents Int     @map("unit_price_cents")
 
   @@map("order_items")
 }
