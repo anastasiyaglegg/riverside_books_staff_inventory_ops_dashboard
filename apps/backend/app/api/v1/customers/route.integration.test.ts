@@ -17,8 +17,12 @@ beforeEach(async () => {
 
 describe("GET /api/v1/customers", () => {
   it("lists all customers with no query", async () => {
-    await prisma.customer.create({ data: { name: "Jane Doe", email: "jane@example.com" } });
-    await prisma.customer.create({ data: { name: "John Smith", email: "john@example.com" } });
+    await prisma.customer.create({
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
+    });
+    await prisma.customer.create({
+      data: { firstName: "John", lastName: "Smith", email: "john@example.com" },
+    });
 
     const response = await GET(new Request("http://localhost/api/v1/customers"));
     const body = await response.json();
@@ -28,14 +32,19 @@ describe("GET /api/v1/customers", () => {
   });
 
   it("filters by name/email/phone match", async () => {
-    await prisma.customer.create({ data: { name: "Jane Doe", email: "jane@example.com" } });
-    await prisma.customer.create({ data: { name: "John Smith", email: "john@example.com" } });
+    await prisma.customer.create({
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
+    });
+    await prisma.customer.create({
+      data: { firstName: "John", lastName: "Smith", email: "john@example.com" },
+    });
 
     const response = await GET(new Request("http://localhost/api/v1/customers?q=jane"));
     const body = await response.json();
 
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].name).toBe("Jane Doe");
+    expect(body.data[0].firstName).toBe("Jane");
+    expect(body.data[0].lastName).toBe("Doe");
   });
 
   it("returns 401 when not authenticated as staff", async () => {
@@ -50,13 +59,14 @@ describe("POST /api/v1/customers", () => {
     const response = await POST(
       new Request("http://localhost/api/v1/customers", {
         method: "POST",
-        body: JSON.stringify({ name: "Jane Doe", email: "jane@example.com" }),
+        body: JSON.stringify({ firstName: "Jane", lastName: "Doe", email: "jane@example.com" }),
       }),
     );
     const body = await response.json();
 
     expect(response.status).toBe(201);
-    expect(body.data.name).toBe("Jane Doe");
+    expect(body.data.firstName).toBe("Jane");
+    expect(body.data.lastName).toBe("Doe");
     expect(body.data.loyaltyStampCount).toBe(0);
   });
 
@@ -64,19 +74,19 @@ describe("POST /api/v1/customers", () => {
     const response = await POST(
       new Request("http://localhost/api/v1/customers", {
         method: "POST",
-        body: JSON.stringify({ name: "Jane Doe" }),
+        body: JSON.stringify({ firstName: "Jane", lastName: "Doe" }),
       }),
     );
     expect(response.status).toBe(400);
   });
 
   it("returns 409 for a duplicate email", async () => {
-    await prisma.customer.create({ data: { name: "Existing", email: "jane@example.com" } });
+    await prisma.customer.create({ data: { firstName: "Existing", email: "jane@example.com" } });
 
     const response = await POST(
       new Request("http://localhost/api/v1/customers", {
         method: "POST",
-        body: JSON.stringify({ name: "Jane Doe", email: "jane@example.com" }),
+        body: JSON.stringify({ firstName: "Jane", lastName: "Doe", email: "jane@example.com" }),
       }),
     );
     expect(response.status).toBe(409);

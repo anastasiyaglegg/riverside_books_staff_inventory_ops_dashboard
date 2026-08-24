@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const customer = await findOrCreateCustomer({
-    name: customerName,
+    firstName: customerName,
     email: customerEmail,
     phone: customerPhone,
   });

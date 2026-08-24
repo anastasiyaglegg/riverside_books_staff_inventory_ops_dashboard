@@ -20,7 +20,11 @@ async function makeOrder(status: string, customerId?: string) {
     customerId ??
     (
       await prisma.customer.create({
-        data: { name: "Jane Doe", email: `${status}-${Date.now()}-${Math.random()}@example.com` },
+        data: {
+          firstName: "Jane",
+          lastName: "Doe",
+          email: `${status}-${Date.now()}-${Math.random()}@example.com`,
+        },
       })
     ).id;
   return prisma.order.create({
@@ -60,7 +64,7 @@ describe("GET /api/v1/orders", () => {
   it("returns just that customer's orders without auth when customerId is given", async () => {
     vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
     const customer = await prisma.customer.create({
-      data: { name: "Jane Doe", email: "jane@example.com" },
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
     });
     await makeOrder("placed", customer.id);
     await makeOrder("completed");
@@ -108,7 +112,7 @@ describe("POST /api/v1/orders", () => {
       data: { title: "Test Book", author: "A. Author", priceCents: 1000 },
     });
     const existing = await prisma.customer.create({
-      data: { name: "Jane Doe", email: "jane@example.com" },
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
     });
 
     const response = await POST(

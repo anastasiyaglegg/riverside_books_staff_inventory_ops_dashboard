@@ -70,9 +70,11 @@ model Inventory {
 
 model Customer {
   id                 String   @id @default(uuid())
-  name               String
+  firstName          String
+  lastName           String?  // optional: guest-checkout / one-name customers may lack it; signup requires both
   email              String?  @unique
   phone              String?  @unique
+  firebaseUid        String?  @unique // Firebase Auth uid (Product A customer sign-in); null for staff/guest-created rows
   loyaltyStampCount  Int      @default(0)
   createdAt          DateTime @default(now())
   orders             Order[]
@@ -168,6 +170,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | GET | `/customers` | Staff | Search customers (`?q=` matches name/email/phone) -- added post-hoc for story B9 (Loyalty Lookup), not in the original table |
 | POST | `/customers` | Public | Create a customer profile (Product A signup). `409` on duplicate email/phone |
 | GET | `/customers/:id` | Public | Customer profile incl. loyalty count. Was staff-only; same unguessable-UUID reasoning as `/orders/:id` |
+| GET | `/customers/me` | Customer (Firebase) | The signed-in customer's own record. Verifies a Firebase ID token (`requireCustomerSession`), links the uid to an existing row (verified email required) or creates one, so loyalty/orders restore on any device. `403 EMAIL_NOT_VERIFIED` on an unverified-email collision |
 | POST | `/loyalty/earn` | Staff | Add a stamp; body: `{ customerId }` |
 | POST | `/loyalty/redeem` | Staff | Redeem a reward; body: `{ customerId }`; reject if balance insufficient |
 | GET | `/events` | Public | Upcoming events |
@@ -176,8 +179,22 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | POST | `/events/:id/tickets` | Public | Reserve a ticket (Product A). Body: `{ customerName, customerEmail? or customerPhone? }`. Rejects with `400` once `event.capacity` is reached (cancelled tickets don't count against it); finds-or-creates the customer same as `/orders` |
 | GET | `/policies` | Public | All store policies |
 | PATCH | `/policies/:key` | Staff | Edit a policy value |
+| POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId, quantity }], customerId? }`. Amounts priced server-side from `Book.priceCents`; returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
+| GET | `/checkout/session?session_id=` | Public | Session status + linked `orderId` (once the webhook has written it), for the return page |
+| POST | `/webhooks/stripe` | Stripe (signed) | Payment webhook. Verifies the signature, and on `checkout.session.completed` (paid) writes the `Order` (`paid_online`), idempotent by `stripeSessionId`. This is where fulfillment happens, never the return page |
 
 **On the public-by-unguessable-UUID pattern** (`/orders/:id`, `/customers/:id`): this is an MVP tradeoff, not a real auth system. The technical spec defers real customer identity to a Supabase magic-link/OTP flow that hasn't been built. Anyone who has (or guesses) the UUID can read that order/customer record. Acceptable for now since these are hard-to-guess v4 UUIDs and the data isn't especially sensitive (no payment info), but revisit if/when real customer auth gets built.
+
+## Payments (Stripe)
+
+Online payment for customer pre-orders (Product A). **Before writing or changing any payment code, invoke the `stripe:stripe-best-practices` skill** — it carries the current API version, SDK versions, and integration routing; don't answer payment questions or write Stripe code from memory. These are the load-bearing rules that skill enforces:
+
+- **In-site, no redirect.** Use the **Payment Element / embedded Checkout backed by the Checkout Sessions API** (`ui_mode: 'embedded'`, or `'custom'` when driving the Payment Element yourself). Never the legacy Card Element or Charges API.
+- **Amounts are computed server-side from the DB, never trusted from the client.** Line items come from `Book.priceCents`; the client sends book ids + quantities only. Money stays integer cents (matches the schema rule).
+- **Webhooks are required, not optional.** Fulfillment — creating/finalizing the `Order` (`paymentStatus: "paid_online"`) — happens in a webhook handler (`checkout.session.completed`, gated on `payment_status !== "unpaid"`), **not** on the success/return page. Always [verify the event signature](https://docs.stripe.com/webhooks.md#verify-events) with the signing secret. Locally, forward events with the Stripe CLI (`stripe listen --forward-to`).
+- **Never pass `payment_method_types`.** Omit it so dynamic payment methods stay on; configure methods from the Dashboard.
+- **Keys.** Prefer a **restricted key** (`rk_test_…`) over a secret key; both are backend-only, loaded lazily from env (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`), never shipped to the browser or committed. Only the publishable key (`pk_test_…`) goes to the frontend. Instantiate a `StripeClient` instance — don't use the deprecated global-key pattern.
+- **`paymentStatus`** literals stay exactly `"unpaid" | "paid_online" | "pay_in_store"` (other products key off them).
 
 ## Shared Business Logic — Build and Unit-Test Before Wiring Routes
 

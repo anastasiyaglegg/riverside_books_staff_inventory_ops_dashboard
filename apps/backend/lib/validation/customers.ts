@@ -6,7 +6,8 @@ export const listCustomersQuerySchema = z.object({
 
 export const createCustomerSchema = z
   .object({
-    name: z.string().min(1),
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
     email: z.string().email().optional(),
     phone: z.string().min(1).optional(),
   })

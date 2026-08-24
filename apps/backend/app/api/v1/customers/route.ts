@@ -24,13 +24,14 @@ export async function GET(request: Request) {
     where: {
       ...(q && {
         OR: [
-          { name: { contains: q, mode: "insensitive" } },
+          { firstName: { contains: q, mode: "insensitive" } },
+          { lastName: { contains: q, mode: "insensitive" } },
           { email: { contains: q, mode: "insensitive" } },
           { phone: { contains: q, mode: "insensitive" } },
         ],
       }),
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
 
   return ok(customers);

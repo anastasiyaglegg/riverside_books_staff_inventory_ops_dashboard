@@ -19,7 +19,12 @@ beforeEach(async () => {
 describe("POST /api/v1/loyalty/redeem", () => {
   it("redeems a reward and logs a redeem transaction", async () => {
     const customer = await prisma.customer.create({
-      data: { name: "Jane Doe", email: "jane@example.com", loyaltyStampCount: STAMPS_PER_REWARD },
+      data: {
+        firstName: "Jane",
+        lastName: "Doe",
+        email: "jane@example.com",
+        loyaltyStampCount: STAMPS_PER_REWARD,
+      },
     });
 
     const response = await POST(
@@ -41,7 +46,8 @@ describe("POST /api/v1/loyalty/redeem", () => {
   it("rejects redemption when the balance is insufficient", async () => {
     const customer = await prisma.customer.create({
       data: {
-        name: "Jane Doe",
+        firstName: "Jane",
+        lastName: "Doe",
         email: "jane@example.com",
         loyaltyStampCount: STAMPS_PER_REWARD - 1,
       },

@@ -18,7 +18,7 @@ beforeEach(async () => {
 describe("POST /api/v1/loyalty/earn", () => {
   it("adds a stamp and logs an earn transaction", async () => {
     const customer = await prisma.customer.create({
-      data: { name: "Jane Doe", email: "jane@example.com", loyaltyStampCount: 3 },
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com", loyaltyStampCount: 3 },
     });
 
     const response = await POST(

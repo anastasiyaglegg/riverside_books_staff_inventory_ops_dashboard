@@ -48,9 +48,16 @@ model Inventory {
 
 model Customer {
   id                String               @id @default(uuid())
-  name              String
+  firstName         String               @map("first_name")
+  // Optional: guest-checkout and one-name customers may only have a first name; the
+  // signup form + POST /customers require both, but the column stays nullable so those
+  // paths (and legacy rows) remain valid.
+  lastName          String?              @map("last_name")
   email             String?              @unique
   phone             String?              @unique
+  // Firebase Auth uid (customer sign-in, Product A). Nullable because staff-created and
+  // guest-checkout customers predate/skip Firebase; unique so one uid maps to one row.
+  firebaseUid       String?              @unique @map("firebase_uid")
   loyaltyStampCount Int                  @default(0) @map("loyalty_stamp_count")
   createdAt         DateTime             @default(now()) @map("created_at")
   orders            Order[]
@@ -69,6 +76,10 @@ model Order {
   // "unpaid" | "paid_online" | "pay_in_store"
   paymentStatus String      @map("payment_status")
   totalCents    Int         @map("total_cents")
+  // Stripe Checkout Session id for online-paid orders. Unique so the payment webhook is
+  // idempotent -- Stripe may deliver checkout.session.completed more than once, and this
+  // stops a duplicate order. Null for in-store / non-Stripe orders.
+  stripeSessionId String?   @unique @map("stripe_session_id")
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   items         OrderItem[]

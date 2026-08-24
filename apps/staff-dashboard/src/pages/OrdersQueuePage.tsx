@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCents } from "@/lib/money";
-import type { Order, OrderStatus } from "@/types";
+import { customerFullName, type Order, type OrderStatus } from "@/types";
 
 // Mirrors lib/orders.ts on the backend, for UI affordance only -- the backend is the
 // source of truth and re-validates every transition server-side.
@@ -92,7 +92,9 @@ export function OrdersQueuePage() {
             {queue.map((order) => (
               <tr key={order.id}>
                 <td>{new Date(order.createdAt).toLocaleString()}</td>
-                <td>{order.customer?.name ?? "—"}</td>
+                <td>
+                  {order.customer ? customerFullName(order.customer) : "—"}
+                </td>
                 <td>{order.customer?.email ?? order.customer?.phone ?? "—"}</td>
                 <td>
                   {order.items
