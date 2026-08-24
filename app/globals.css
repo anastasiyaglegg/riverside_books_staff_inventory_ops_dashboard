@@ -1,0 +1,311 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #f6f3ee;
+  color: #24211d;
+}
+
+.demo-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.demo-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.demo-page p {
+  color: #55504a;
+  line-height: 1.5;
+}
+
+/* Chat widget */
+.rb-launcher {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #3f5d43;
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+
+.rb-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  height: 600px;
+  max-height: calc(100vh - 40px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+@media (max-width: 640px) {
+  .rb-panel {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+}
+
+.rb-header {
+  background: #3f5d43;
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.rb-header button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.rb-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.rb-chip {
+  background: #eef1e9;
+  border: 1px solid #d7ddcc;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #33422f;
+}
+
+.rb-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.4;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+.rb-bubble.user {
+  align-self: flex-end;
+  background: #3f5d43;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.rb-bubble.assistant {
+  align-self: flex-start;
+  background: #f1efe9;
+  color: #24211d;
+  border-bottom-left-radius: 4px;
+}
+
+.rb-typing {
+  align-self: flex-start;
+  color: #837b6f;
+  font-size: 0.85rem;
+  padding: 4px 14px;
+}
+
+.rb-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #eee;
+}
+
+.rb-input-row input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+.rb-input-row button {
+  background: #3f5d43;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 0 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.rb-input-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Product card */
+.rb-card {
+  border: 1px solid #e3e0d8;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.rb-card-cover {
+  width: 48px;
+  height: 68px;
+  background: #d7ddcc;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.rb-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.rb-card-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0 0 2px;
+}
+
+.rb-card-author {
+  font-size: 0.78rem;
+  color: #77705f;
+  margin: 0 0 4px;
+}
+
+.rb-card-price {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.rb-stock {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.rb-stock.in_stock {
+  background: #e3f1e1;
+  color: #2c6b2f;
+}
+
+.rb-stock.low_stock {
+  background: #fdf0d5;
+  color: #8a5a00;
+}
+
+.rb-stock.out_of_stock {
+  background: #f8e2df;
+  color: #a3372a;
+}
+
+.rb-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rb-btn {
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #3f5d43;
+  background: #fff;
+  color: #3f5d43;
+  cursor: pointer;
+}
+
+.rb-btn.primary {
+  background: #3f5d43;
+  color: #fff;
+}
+
+/* Sample panel */
+.rb-sample-panel {
+  margin-top: 8px;
+  border: 1px solid #e3e0d8;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fbfaf7;
+}
+
+.rb-sample-body {
+  padding: 12px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.rb-sample-credit {
+  font-size: 0.7rem;
+  color: #918a7c;
+  margin-top: 8px;
+}
+
+.rb-sample-cta {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-top: 1px solid #eee;
+}
+
+/* Handoff card */
+.rb-handoff {
+  border: 1px solid #e3e0d8;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rb-handoff h4 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+}

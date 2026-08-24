@@ -121,6 +121,28 @@ export async function lookupByIsbn(isbn: string): Promise<CatalogItem | null> {
   };
 }
 
+/** Used to resolve an event's featured_book_id into a displayable catalog item. */
+export async function getBookById(id: number): Promise<CatalogItem | null> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("books")
+    .select("id, isbn, title, author, price, stock_level, description")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    product_type: "book",
+    id: data.id,
+    name: data.title,
+    author: data.author,
+    isbn: data.isbn,
+    price: Number(data.price),
+    stock_level: data.stock_level,
+    description: data.description,
+  };
+}
+
 export async function getStoreInfo(
   categories: StoreInfoRow["category"][]
 ): Promise<StoreInfoRow[]> {
@@ -164,6 +186,33 @@ export async function getSample(bookId: number): Promise<BookSample | null> {
     .maybeSingle();
   if (error) throw error;
   return data ?? null;
+}
+
+/**
+ * Neutral browse fallback for vague requests like "what's your best book?".
+ * Ordered by stock_level desc (availability) — NOT a quality ranking. Framed
+ * via each book's own description field so Claude never has to invent a
+ * superlative claim (rule 5: no "bestseller"/"award-winning" unless that
+ * exact wording is in the description).
+ */
+export async function getFeaturedBooks(limit = 3): Promise<CatalogItem[]> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("books")
+    .select("id, isbn, title, author, price, stock_level, description")
+    .order("stock_level", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((b) => ({
+    product_type: "book" as const,
+    id: b.id,
+    name: b.title,
+    author: b.author,
+    isbn: b.isbn,
+    price: Number(b.price),
+    stock_level: b.stock_level,
+    description: b.description,
+  }));
 }
 
 export async function getItemsUnderPrice(
