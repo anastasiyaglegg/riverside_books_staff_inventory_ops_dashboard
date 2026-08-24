@@ -3,12 +3,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
-const apiGet = vi.fn();
+const apiGetPaged = vi.fn();
 const apiPatch = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
-    get: (...args: unknown[]) => apiGet(...args),
+    getPaged: (...args: unknown[]) => apiGetPaged(...args),
     patch: (...args: unknown[]) => apiPatch(...args),
   },
   ApiError: class ApiError extends Error {},
@@ -62,14 +62,35 @@ const INVENTORY: Inventory[] = [
   },
 ];
 
+function pagedResponse(
+  data: Inventory[],
+  meta: Partial<{
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  }> = {},
+) {
+  return {
+    data,
+    meta: {
+      page: 1,
+      pageSize: 20,
+      totalItems: data.length,
+      totalPages: 1,
+      ...meta,
+    },
+  };
+}
+
 beforeEach(() => {
-  apiGet.mockReset();
+  apiGetPaged.mockReset();
   apiPatch.mockReset();
 });
 
 describe("InventoryPage", () => {
   it("renders every title with its stock status badge", async () => {
-    apiGet.mockResolvedValue(INVENTORY);
+    apiGetPaged.mockResolvedValue(pagedResponse(INVENTORY));
     render(
       <MemoryRouter>
         <InventoryPage />
@@ -83,7 +104,7 @@ describe("InventoryPage", () => {
   });
 
   it("filters to Needs Reorder only when the toggle is checked", async () => {
-    apiGet.mockResolvedValue(INVENTORY);
+    apiGetPaged.mockResolvedValue(pagedResponse(INVENTORY));
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -99,7 +120,7 @@ describe("InventoryPage", () => {
   });
 
   it("saves an edited quantity via the API", async () => {
-    apiGet.mockResolvedValue(INVENTORY);
+    apiGetPaged.mockResolvedValue(pagedResponse(INVENTORY));
     apiPatch.mockResolvedValue({
       ...INVENTORY[0],
       quantityOnHand: 9,
@@ -120,5 +141,121 @@ describe("InventoryPage", () => {
     expect(apiPatch).toHaveBeenCalledWith("/inventory/book-1", {
       quantityOnHand: 9,
     });
+  });
+
+  it("shows the current page and total pages", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 2, totalPages: 5, totalItems: 100 }),
+    );
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Page 2 of 5")).toBeInTheDocument();
+  });
+
+  it("disables Skip to First and Previous on the first page", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 1, totalPages: 5, totalItems: 100 }),
+    );
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Page 1 of 5");
+    expect(screen.getByLabelText("Skip to first page")).toBeDisabled();
+    expect(screen.getByLabelText("Previous page")).toBeDisabled();
+    expect(screen.getByLabelText("Next page")).toBeEnabled();
+    expect(screen.getByLabelText("Skip to last page")).toBeEnabled();
+  });
+
+  it("disables Next and Skip to Last on the final page", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 5, totalPages: 5, totalItems: 100 }),
+    );
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Page 5 of 5");
+    expect(screen.getByLabelText("Next page")).toBeDisabled();
+    expect(screen.getByLabelText("Skip to last page")).toBeDisabled();
+  });
+
+  it("re-fetches with the new page when Skip to Last is clicked", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 1, totalPages: 5, totalItems: 100 }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Page 1 of 5");
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 5, totalPages: 5, totalItems: 100 }),
+    );
+    await user.click(screen.getByLabelText("Skip to last page"));
+
+    expect(await screen.findByText("Page 5 of 5")).toBeInTheDocument();
+    expect(apiGetPaged).toHaveBeenLastCalledWith(
+      "/inventory?page=5&pageSize=20",
+    );
+  });
+
+  it("jumps to a specific page typed into the page box", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 1, totalPages: 5, totalItems: 100 }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Page 1 of 5");
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 3, totalPages: 5, totalItems: 100 }),
+    );
+    await user.type(screen.getByLabelText("Go to page"), "3");
+    await user.click(screen.getByRole("button", { name: "Go" }));
+
+    expect(await screen.findByText("Page 3 of 5")).toBeInTheDocument();
+    expect(apiGetPaged).toHaveBeenLastCalledWith(
+      "/inventory?page=3&pageSize=20",
+    );
+  });
+
+  it("clamps a jump target beyond the last page", async () => {
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 1, totalPages: 5, totalItems: 100 }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Page 1 of 5");
+    apiGetPaged.mockResolvedValue(
+      pagedResponse(INVENTORY, { page: 5, totalPages: 5, totalItems: 100 }),
+    );
+    await user.type(screen.getByLabelText("Go to page"), "99");
+    await user.click(screen.getByRole("button", { name: "Go" }));
+
+    expect(await screen.findByText("Page 5 of 5")).toBeInTheDocument();
+    expect(apiGetPaged).toHaveBeenLastCalledWith(
+      "/inventory?page=5&pageSize=20",
+    );
   });
 });
