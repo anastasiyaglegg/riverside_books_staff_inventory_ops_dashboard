@@ -73,6 +73,7 @@ model Customer {
   name               String
   email              String?  @unique
   phone              String?  @unique
+  firebaseUid        String?  @unique // Firebase Auth uid (Product A customer sign-in); null for staff/guest-created rows
   loyaltyStampCount  Int      @default(0)
   createdAt          DateTime @default(now())
   orders             Order[]
@@ -168,6 +169,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | GET | `/customers` | Staff | Search customers (`?q=` matches name/email/phone) -- added post-hoc for story B9 (Loyalty Lookup), not in the original table |
 | POST | `/customers` | Public | Create a customer profile (Product A signup). `409` on duplicate email/phone |
 | GET | `/customers/:id` | Public | Customer profile incl. loyalty count. Was staff-only; same unguessable-UUID reasoning as `/orders/:id` |
+| GET | `/customers/me` | Customer (Firebase) | The signed-in customer's own record. Verifies a Firebase ID token (`requireCustomerSession`), links the uid to an existing row (verified email required) or creates one, so loyalty/orders restore on any device. `403 EMAIL_NOT_VERIFIED` on an unverified-email collision |
 | POST | `/loyalty/earn` | Staff | Add a stamp; body: `{ customerId }` |
 | POST | `/loyalty/redeem` | Staff | Redeem a reward; body: `{ customerId }`; reject if balance insufficient |
 | GET | `/events` | Public | Upcoming events |
