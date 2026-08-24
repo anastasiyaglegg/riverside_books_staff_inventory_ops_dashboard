@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cartItemSchema } from "@/lib/validation/checkout";
 
 export const listOrdersQuerySchema = z.object({
   status: z.enum(["placed", "ready_for_pickup", "completed", "cancelled"]).optional(),
@@ -16,14 +17,8 @@ export const createOrderSchema = z
     customerName: z.string().min(1),
     customerEmail: z.string().email().optional(),
     customerPhone: z.string().min(1).optional(),
-    items: z
-      .array(
-        z.object({
-          bookId: z.string().uuid(),
-          quantity: z.number().int().positive(),
-        }),
-      )
-      .min(1),
+    // Books, gifts, and cards can all be pre-ordered; each line references exactly one.
+    items: z.array(cartItemSchema).min(1),
   })
   .refine((data) => data.customerEmail || data.customerPhone, {
     message: "Either customerEmail or customerPhone is required",

@@ -2,7 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail, failValidation } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { findOrCreateCustomer } from "@/lib/customers";
+import { resolveCart } from "@/lib/checkout";
 import { listOrdersQuerySchema, createOrderSchema } from "@/lib/validation/orders";
+
+// Every order line points at one of three product catalogs -- pull all three so the
+// caller always sees the referenced product regardless of type.
+const ORDER_ITEM_INCLUDE = { book: true, gift: true, card: true } as const;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,7 +29,7 @@ export async function GET(request: Request) {
 
   const orders = await prisma.order.findMany({
     where: { ...(status && { status }), ...(customerId && { customerId }) },
-    include: { customer: true, items: { include: { book: true } } },
+    include: { customer: true, items: { include: ORDER_ITEM_INCLUDE } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -42,19 +47,12 @@ export async function POST(request: Request) {
   }
   const { customerName, customerEmail, customerPhone, items } = parsed.data;
 
-  const books = await prisma.book.findMany({
-    where: { id: { in: items.map((i) => i.bookId) } },
-  });
-  if (books.length !== new Set(items.map((i) => i.bookId)).size) {
-    return fail("One or more books do not exist", 400, "INVALID_BOOK");
+  // Prices everything server-side across books/gifts/cards; null means an item was
+  // malformed or referenced a product that doesn't exist.
+  const resolved = await resolveCart(items);
+  if (!resolved) {
+    return fail("One or more items do not exist", 400, "INVALID_ITEMS");
   }
-  const bookById = new Map(books.map((b) => [b.id, b]));
-
-  const orderItems = items.map((item) => {
-    const book = bookById.get(item.bookId)!;
-    return { bookId: item.bookId, quantity: item.quantity, unitPriceCents: book.priceCents };
-  });
-  const totalCents = orderItems.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
 
   const customer = await findOrCreateCustomer({
     firstName: customerName,
@@ -67,10 +65,10 @@ export async function POST(request: Request) {
       customerId: customer.id,
       status: "placed",
       paymentStatus: "unpaid",
-      totalCents,
-      items: { create: orderItems },
+      totalCents: resolved.totalCents,
+      items: { create: resolved.orderItems },
     },
-    include: { customer: true, items: { include: { book: true } } },
+    include: { customer: true, items: { include: ORDER_ITEM_INCLUDE } },
   });
 
   return ok(order, 201);
