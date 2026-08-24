@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
-import type { Customer } from "@/types";
+import { customerFullName, type Customer } from "@/types";
 
 const STAMPS_PER_REWARD = 10; // mirrors lib/loyalty.ts on the backend
 
@@ -96,7 +96,8 @@ export function LoyaltyPage() {
                 }
                 onClick={() => setSelected(customer)}
               >
-                {customer.name} — {customer.loyaltyStampCount} stamps
+                {customerFullName(customer)} — {customer.loyaltyStampCount}{" "}
+                stamps
               </button>
             </li>
           ))}
@@ -107,7 +108,7 @@ export function LoyaltyPage() {
 
         {selected && (
           <div className="customer-detail">
-            <h2>{selected.name}</h2>
+            <h2>{customerFullName(selected)}</h2>
             <p>{selected.email ?? selected.phone ?? "No contact on file"}</p>
             <p className="stamp-count">
               {selected.loyaltyStampCount} / {STAMPS_PER_REWARD} stamps

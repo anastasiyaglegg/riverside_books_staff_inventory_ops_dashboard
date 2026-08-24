@@ -33,12 +33,24 @@ export type Book = {
 
 export type Customer = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string | null;
   email: string | null;
   phone: string | null;
   loyaltyStampCount: number;
   createdAt: string;
 };
+
+// Customers now have separate first/last names; lastName is optional (guest checkout /
+// one-name rows). Use this everywhere a full display name is shown.
+export function customerFullName(customer: {
+  firstName: string;
+  lastName: string | null;
+}): string {
+  return customer.lastName
+    ? `${customer.firstName} ${customer.lastName}`
+    : customer.firstName;
+}
 
 export type OrderItem = {
   id: string;

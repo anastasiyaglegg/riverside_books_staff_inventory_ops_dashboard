@@ -27,7 +27,8 @@ const ORDERS: Order[] = [
     updatedAt: "2026-08-01T00:00:00.000Z",
     customer: {
       id: "cust-1",
-      name: "Jane Doe",
+      firstName: "Jane",
+      lastName: "Doe",
       email: "jane@example.com",
       phone: null,
       loyaltyStampCount: 0,
@@ -45,7 +46,8 @@ const ORDERS: Order[] = [
     updatedAt: "2026-08-02T00:00:00.000Z",
     customer: {
       id: "cust-2",
-      name: "Already Done",
+      firstName: "Already",
+      lastName: "Done",
       email: null,
       phone: null,
       loyaltyStampCount: 0,
