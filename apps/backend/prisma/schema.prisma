@@ -51,6 +51,9 @@ model Customer {
   name              String
   email             String?              @unique
   phone             String?              @unique
+  // Firebase Auth uid (customer sign-in, Product A). Nullable because staff-created and
+  // guest-checkout customers predate/skip Firebase; unique so one uid maps to one row.
+  firebaseUid       String?              @unique @map("firebase_uid")
   loyaltyStampCount Int                  @default(0) @map("loyalty_stamp_count")
   createdAt         DateTime             @default(now()) @map("created_at")
   orders            Order[]
