@@ -164,6 +164,23 @@ function retrievedRowCount(data: RetrievedData): number {
   );
 }
 
+/**
+ * Fired server-side (not from the browser) so it's guaranteed on every
+ * single-book turn regardless of whether the client's JS runs — this is what
+ * acceptance test 11 checks for. Client-side events (opened/completed/
+ * reserve_clicked/dismissed) still come from ProductCard/SamplePanel, since
+ * only the browser knows about those interactions.
+ */
+async function recordSampleShown(sessionId: string, bookId: number): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("sample_preview_events")
+    .insert({ session_id: sessionId, book_id: bookId, action: "shown" });
+  if (error) {
+    console.error("Failed to write sample_preview_events 'shown' row:", error);
+  }
+}
+
 async function logChatTurn(params: {
   sessionId: string;
   question: string;
@@ -240,6 +257,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const wasAnswered = classification.intent !== "unknown" && rowCount > 0;
   const handoffOffered =
     classification.intent === "handoff" || classification.intent === "unknown" || rowCount === 0;
+
+  if (retrieved.sample_book_id !== null) {
+    await recordSampleShown(sessionId, retrieved.sample_book_id);
+  }
 
   await logChatTurn({
     sessionId,

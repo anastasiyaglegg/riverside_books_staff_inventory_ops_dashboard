@@ -50,18 +50,9 @@ export default function ChatWidget() {
         body: JSON.stringify({ message: trimmed, session_id: sessionId, history }),
       });
       const data: ChatApiResponse = await res.json();
-
-      if (data.sample) {
-        fetch("/api/sample/event", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            session_id: sessionId,
-            book_id: data.sample.book_id,
-            action: "shown",
-          }),
-        }).catch(() => {});
-      }
+      // The 'shown' sample_preview_events row is recorded server-side in
+      // /api/chat (see app/api/chat/route.ts) so it's guaranteed even if
+      // this client never mounts — no client-side duplicate needed here.
 
       const assistantMessage: ChatMessage = {
         id: `a-${Date.now()}`,
