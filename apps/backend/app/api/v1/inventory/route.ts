@@ -23,7 +23,9 @@ export async function GET(request: Request) {
     prisma.inventory.findMany({
       where,
       include: { book: true, lastAdjustedBy: { select: { id: true, name: true } } },
-      orderBy: { book: { title: "asc" } },
+      // Newest-touched first, so a book a staffer just added or adjusted shows
+      // up on page 1 without having to hunt for it across pages.
+      orderBy: { updatedAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
