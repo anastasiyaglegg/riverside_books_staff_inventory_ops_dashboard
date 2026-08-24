@@ -2,10 +2,16 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
-import type { Inventory } from "@/types";
+import { Pagination } from "@/components/Pagination";
+import type { Inventory, PaginationMeta } from "@/types";
+
+// Mirrors DEFAULT_PAGE_SIZE in lib/pagination.ts on the backend.
+const PAGE_SIZE = 20;
 
 export function InventoryPage() {
   const [items, setItems] = useState<Inventory[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsReorderOnly, setNeedsReorderOnly] = useState(false);
@@ -18,8 +24,12 @@ export function InventoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get<Inventory[]>("/inventory");
+      const { data, meta: pageMeta } = await api.getPaged<
+        Inventory[],
+        PaginationMeta
+      >(`/inventory?page=${page}&pageSize=${PAGE_SIZE}`);
       setItems(data);
+      setMeta(pageMeta);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Failed to load inventory",
@@ -31,7 +41,7 @@ export function InventoryPage() {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [page]);
 
   async function saveQuantity(bookId: string) {
     const raw = pendingQuantities[bookId];
@@ -161,6 +171,14 @@ export function InventoryPage() {
             )}
           </tbody>
         </table>
+      )}
+
+      {meta && (
+        <Pagination
+          page={meta.page}
+          totalPages={meta.totalPages}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );
