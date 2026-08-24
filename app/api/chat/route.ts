@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { classifyIntent } from "@/lib/intent";
+import { classifyIntent, extractSearchTerms } from "@/lib/intent";
 import {
   searchCatalog,
   lookupByIsbn,
@@ -77,13 +77,13 @@ async function buildRetrievedData(
         const match = await lookupByIsbn(classification.isbn);
         if (match) books = [match];
       } else {
-        const results = await searchCatalog(message, { limit: 5 });
+        const results = await searchCatalog(extractSearchTerms(message), { limit: 5 });
         ({ books, cards, gifts } = splitByType(results));
       }
       break;
     }
     case "sample_request": {
-      const results = await searchCatalog(message, { limit: 5 });
+      const results = await searchCatalog(extractSearchTerms(message), { limit: 5 });
       ({ books, cards, gifts } = splitByType(results));
       break;
     }
@@ -93,7 +93,7 @@ async function buildRetrievedData(
         const results = await getItemsUnderPrice(classification.priceUnder, types);
         ({ books, cards, gifts } = splitByType(results));
       } else {
-        const results = await searchCatalog(message, { limit: 5 });
+        const results = await searchCatalog(extractSearchTerms(message), { limit: 5 });
         ({ books, cards, gifts } = splitByType(results));
         if (
           books.length === 0 &&
