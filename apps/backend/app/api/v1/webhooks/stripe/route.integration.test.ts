@@ -64,6 +64,40 @@ describe("POST /api/v1/webhooks/stripe", () => {
     expect(order?.items[0]?.unitPriceCents).toBe(1500);
   });
 
+  it("fulfills an order containing a gift and a card", async () => {
+    const gift = await prisma.gift.create({ data: { name: "Enamel Mug", priceCents: 1200 } });
+    const card = await prisma.card.create({ data: { title: "Birthday Card", priceCents: 500 } });
+    const customer = await prisma.customer.create({
+      data: { firstName: "Ada", lastName: "Reader", email: "ada@example.com" },
+    });
+    constructEvent.mockReturnValue(
+      completedEvent({
+        id: "cs_paid_giftcard",
+        payment_status: "paid",
+        metadata: {
+          items: JSON.stringify([
+            { giftId: gift.id, quantity: 2 },
+            { cardId: card.id, quantity: 1 },
+          ]),
+          customerId: customer.id,
+        },
+      }),
+    );
+
+    await POST(webhookRequest());
+
+    const order = await prisma.order.findUnique({
+      where: { stripeSessionId: "cs_paid_giftcard" },
+      include: { items: true },
+    });
+    expect(order?.paymentStatus).toBe("paid_online");
+    // 2*1200 + 1*500 = 2900
+    expect(order?.totalCents).toBe(2900);
+    expect(order?.items).toHaveLength(2);
+    expect(order?.items.find((i) => i.giftId === gift.id)?.quantity).toBe(2);
+    expect(order?.items.find((i) => i.cardId === card.id)?.quantity).toBe(1);
+  });
+
   it("is idempotent -- a repeated event does not create a second order", async () => {
     const book = await prisma.book.create({
       data: { title: "Paid Book", author: "Tester", priceCents: 1500 },

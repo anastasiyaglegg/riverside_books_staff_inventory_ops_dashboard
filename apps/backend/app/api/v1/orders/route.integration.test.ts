@@ -131,6 +131,73 @@ describe("POST /api/v1/orders", () => {
     expect(await prisma.customer.count()).toBe(1);
   });
 
+  it("creates an order mixing a book, a gift, and a card, priced from each catalog", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Test Book", author: "A. Author", priceCents: 1500 },
+    });
+    const gift = await prisma.gift.create({ data: { name: "Enamel Mug", priceCents: 1200 } });
+    const card = await prisma.card.create({ data: { title: "Birthday Card", priceCents: 500 } });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [
+            { bookId: book.id, quantity: 1 },
+            { giftId: gift.id, quantity: 2 },
+            { cardId: card.id, quantity: 3 },
+          ],
+        }),
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    // 1500 + 2*1200 + 3*500 = 5400
+    expect(body.data.totalCents).toBe(5400);
+    expect(body.data.items).toHaveLength(3);
+    const kinds = body.data.items.map(
+      (i: { bookId: string | null; giftId: string | null; cardId: string | null }) =>
+        i.bookId ? "book" : i.giftId ? "gift" : "card",
+    );
+    expect(kinds.sort()).toEqual(["book", "card", "gift"]);
+  });
+
+  it("returns 400 when a line references more than one product", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Test Book", author: "A. Author", priceCents: 1500 },
+    });
+    const gift = await prisma.gift.create({ data: { name: "Enamel Mug", priceCents: 1200 } });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [{ bookId: book.id, giftId: gift.id, quantity: 1 }],
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when a referenced gift does not exist", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [{ giftId: "00000000-0000-0000-0000-000000000000", quantity: 1 }],
+        }),
+      }),
+    );
+    expect(response.status).toBe(400);
+  });
+
   it("returns 400 when neither email nor phone is provided", async () => {
     const request = new Request("http://localhost/api/v1/orders", {
       method: "POST",

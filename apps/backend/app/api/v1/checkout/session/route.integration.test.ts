@@ -44,6 +44,37 @@ describe("POST /api/v1/checkout/session", () => {
     expect(args.line_items[0].quantity).toBe(2);
   });
 
+  it("prices a gift line item from the gifts catalog", async () => {
+    const gift = await prisma.gift.create({ data: { name: "Enamel Mug", priceCents: 1200 } });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/checkout/session", {
+        method: "POST",
+        body: JSON.stringify({ items: [{ giftId: gift.id, quantity: 3 }] }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const [args] = create.mock.calls[0]!;
+    expect(args.line_items[0].price_data.unit_amount).toBe(1200); // from DB
+    expect(args.line_items[0].price_data.product_data.name).toBe("Enamel Mug");
+    expect(args.line_items[0].quantity).toBe(3);
+  });
+
+  it("rejects a line referencing both a book and a card", async () => {
+    const book = await seedBook(1000);
+    const card = await prisma.card.create({ data: { title: "Birthday Card", priceCents: 500 } });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/checkout/session", {
+        method: "POST",
+        body: JSON.stringify({ items: [{ bookId: book.id, cardId: card.id, quantity: 1 }] }),
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("prefills the email for a signed-in customer (checkout as user)", async () => {
     const book = await seedBook(1000);
     const customer = await prisma.customer.create({
