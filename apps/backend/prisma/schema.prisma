@@ -76,6 +76,10 @@ model Order {
   // "unpaid" | "paid_online" | "pay_in_store"
   paymentStatus String      @map("payment_status")
   totalCents    Int         @map("total_cents")
+  // Stripe Checkout Session id for online-paid orders. Unique so the payment webhook is
+  // idempotent -- Stripe may deliver checkout.session.completed more than once, and this
+  // stops a duplicate order. Null for in-store / non-Stripe orders.
+  stripeSessionId String?   @unique @map("stripe_session_id")
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   items         OrderItem[]

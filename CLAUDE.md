@@ -179,6 +179,9 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | POST | `/events/:id/tickets` | Public | Reserve a ticket (Product A). Body: `{ customerName, customerEmail? or customerPhone? }`. Rejects with `400` once `event.capacity` is reached (cancelled tickets don't count against it); finds-or-creates the customer same as `/orders` |
 | GET | `/policies` | Public | All store policies |
 | PATCH | `/policies/:key` | Staff | Edit a policy value |
+| POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId, quantity }], customerId? }`. Amounts priced server-side from `Book.priceCents`; returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
+| GET | `/checkout/session?session_id=` | Public | Session status + linked `orderId` (once the webhook has written it), for the return page |
+| POST | `/webhooks/stripe` | Stripe (signed) | Payment webhook. Verifies the signature, and on `checkout.session.completed` (paid) writes the `Order` (`paid_online`), idempotent by `stripeSessionId`. This is where fulfillment happens, never the return page |
 
 **On the public-by-unguessable-UUID pattern** (`/orders/:id`, `/customers/:id`): this is an MVP tradeoff, not a real auth system. The technical spec defers real customer identity to a Supabase magic-link/OTP flow that hasn't been built. Anyone who has (or guesses) the UUID can read that order/customer record. Acceptable for now since these are hard-to-guess v4 UUIDs and the data isn't especially sensitive (no payment info), but revisit if/when real customer auth gets built.
 

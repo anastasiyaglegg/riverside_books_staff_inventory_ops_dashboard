@@ -10,10 +10,10 @@ export type CustomerIdentity = {
   phone?: string;
 };
 
-// Splits a display name ("Ada Lovelace") into first/last for the rare create-fallback in
-// resolveCustomerForFirebaseUser. Everything before the first space is the first name;
-// the remainder (if any) is the last name.
-function splitName(fullName: string): { firstName: string; lastName: string | null } {
+// Splits a display name ("Ada Lovelace") into first/last for create-fallbacks (the
+// Firebase resolver, and the Stripe webhook's guest checkout). Everything before the
+// first space is the first name; the remainder (if any) is the last name.
+export function splitName(fullName: string): { firstName: string; lastName: string | null } {
   const trimmed = fullName.trim();
   const gap = trimmed.indexOf(" ");
   if (gap === -1) {
