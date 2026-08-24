@@ -11,12 +11,12 @@
     "lint": "eslint .",
     "test:unit": "vitest run --project unit",
     "test:integration": "dotenv -e .env.test -- vitest run --project integration",
-    "test:e2e": "echo 'No E2E harness wired yet -- the required cross-product flows (testing doc, 09 Sec 4) need Product A + Playwright, neither exists yet' && exit 0",
     "verify:supabase": "SUPABASE_LIFECYCLE_CONFIRM=1 dotenv -e .env.local -- vitest run --project supabase-lifecycle",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:seed": "dotenv -e .env.local -- prisma db seed"
+    "prisma:seed": "dotenv -e .env.local -- prisma db seed",
+    "seed:e2e-staff": "dotenv -e .env.local -- tsx scripts/seed-e2e-staff.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

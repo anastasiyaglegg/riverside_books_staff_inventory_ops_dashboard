@@ -82,6 +82,28 @@ Build a simple staff tool that keeps Riverside Books information organized and u
 
 The larger goal of the Riverside system is simple: **more book lovers and more community.**
 
+## End-to-End Tests
+
+`/e2e` at the repo root covers the two cross-cutting flows CLAUDE.md requires (staff
+zeroes stock -> Out of Stock; staff advances a pre-order -> Ready for Pickup), driven
+with Playwright against the real backend + staff dashboard together.
+
+One-time setup (seeds a dedicated staff login into the dev Supabase project
+`apps/backend/.env.local` already points at):
+
+```
+cd apps/backend && npm run seed:e2e-staff
+```
+
+Then from the repo root:
+
+```
+npm run test:e2e
+```
+
+This starts both dev servers automatically (backend on :3000, dashboard on :5173) if
+they aren't already running, and seeds/cleans up its own test data per spec.
+
 ## Status
 
 🚧 Currently in development

@@ -51,9 +51,11 @@ npm run typecheck
 npm run test:unit   # component tests (Vitest + React Testing Library), no backend needed
 ```
 
-`test:integration` and `test:e2e` are stubs for this app — this SPA has no server-side
-layer of its own to integration-test (all data access goes through `apps/backend`,
-covered there), and no E2E harness is wired up yet.
+`test:integration` is a stub for this app — this SPA has no server-side layer of its
+own to integration-test (all data access goes through `apps/backend`, covered there).
+
+E2E (this app + the backend, driven together) lives at the repo root — see the root
+README and `apps/backend/README.md`'s `seed:e2e-staff` script.
 
 ## Notes
 

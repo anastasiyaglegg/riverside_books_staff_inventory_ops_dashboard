@@ -107,13 +107,20 @@ required just to run the server, only to exercise staff-only routes end-to-end.
 npm run typecheck        # tsc --noEmit
 npm run test:unit        # lib/ business logic, no DB needed
 npm run test:integration # hits riverside_test via .env.test
-npm run test:e2e         # stub until Playwright + Product A (customer app) exist
 ```
 
-Or all of them together, matching what the pre-push hook runs:
+E2E lives at the repo root (`/e2e`), run via `npm run test:e2e` from the repo root -- see
+the root README. It needs a one-time test staff login seeded into the dev Supabase
+project this app's `.env.local` points at:
 
 ```
-npm run typecheck && npm run test:unit && npm run test:integration && npm run test:e2e
+npm run seed:e2e-staff
+```
+
+Or the local suite together, matching what the pre-push hook runs:
+
+```
+npm run typecheck && npm run test:unit && npm run test:integration
 ```
 
 ### Supabase lifecycle check (manual, not part of the hook/CI suite)

@@ -10,8 +10,7 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run",
-    "test:integration": "echo 'No integration layer for this SPA (all data access goes through apps/backend, covered there) -- skipping' && exit 0",
-    "test:e2e": "echo 'No E2E harness wired yet -- skipping until Playwright is set up' && exit 0"
+    "test:integration": "echo 'No integration layer for this SPA (all data access goes through apps/backend, covered there) -- skipping' && exit 0"
   },
   "dependencies": {
     "react": "19.2.0",
