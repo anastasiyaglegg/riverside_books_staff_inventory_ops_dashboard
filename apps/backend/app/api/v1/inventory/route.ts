@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { listInventoryQuerySchema } from "@/lib/validation/inventory";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, buildPaginationMeta } from "@/lib/pagination";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession(request);
@@ -14,12 +15,20 @@ export async function GET(request: Request) {
   if (!parsed.success) {
     return fail("Invalid query parameters", 400, "INVALID_QUERY");
   }
-  const { status } = parsed.data;
+  const { status, page = 1, pageSize: requestedPageSize = DEFAULT_PAGE_SIZE } = parsed.data;
+  const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE);
 
-  const inventory = await prisma.inventory.findMany({
-    where: { ...(status && { status }) },
-    include: { book: true, lastAdjustedBy: { select: { id: true, name: true } } },
-  });
+  const where = { ...(status && { status }) };
+  const [inventory, totalItems] = await Promise.all([
+    prisma.inventory.findMany({
+      where,
+      include: { book: true, lastAdjustedBy: { select: { id: true, name: true } } },
+      orderBy: { book: { title: "asc" } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.inventory.count({ where }),
+  ]);
 
-  return ok(inventory);
+  return ok(inventory, 200, buildPaginationMeta(page, pageSize, totalItems));
 }
