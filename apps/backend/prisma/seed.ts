@@ -432,6 +432,32 @@ const EVENT_TEMPLATES: { title: string; description: string; capacity: number | 
   },
 ];
 
+// Non-book merchandise. name/category + price in cents; stock is inline quantityOnHand.
+const GIFTS: [name: string, category: string, priceCents: number][] = [
+  ["Riverside Books Enamel Mug", "mug", 1495],
+  ["Classic Novels Tote Bag", "tote", 1895],
+  ["Leather Bookmark Set", "stationery", 995],
+  ["Literary Quotes Notebook", "stationery", 1295],
+  ["Book Lover's Enamel Pin", "pin", 795],
+  ["Reading Socks (Pair)", "apparel", 1195],
+  ["Library Scented Candle", "home", 2495],
+  ["1000-Piece Bookstore Puzzle", "puzzle", 1995],
+  ["Book Nerd Sticker Pack", "stationery", 599],
+  ["Cozy Reading Blanket", "home", 3995],
+];
+
+// Greeting cards, grouped by occasion.
+const CARDS: [title: string, occasion: string, priceCents: number][] = [
+  ["Happy Birthday, Bookworm", "birthday", 550],
+  ["Thank You (Floral)", "thank-you", 495],
+  ["Season's Readings", "holiday", 595],
+  ["With Sympathy", "sympathy", 550],
+  ["Congratulations!", "congratulations", 550],
+  ["Blank Card (Botanical)", "blank", 450],
+  ["Happy Anniversary", "anniversary", 595],
+  ["Get Well Soon", "get-well", 495],
+];
+
 const POLICIES = [
   { key: "hours", value: "Mon-Sat 9am-7pm, Sun 10am-5pm" },
   {
@@ -484,6 +510,8 @@ async function resetSeedTables() {
   await prisma.order.deleteMany();
   await prisma.inventory.deleteMany();
   await prisma.book.deleteMany();
+  await prisma.gift.deleteMany();
+  await prisma.card.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.event.deleteMany();
   await prisma.storePolicy.deleteMany();
@@ -537,6 +565,24 @@ async function main() {
     if ((i + 1) % 50 === 0) console.log(`  ...${i + 1}/${BOOK_TITLES.length} books`);
   }
   console.log(`Seeded ${books.length} books with inventory.`);
+
+  await prisma.gift.createMany({
+    data: GIFTS.map(([name, category, priceCents]) => ({
+      name,
+      category,
+      priceCents,
+      quantityOnHand: Math.floor(Math.random() * 25),
+    })),
+  });
+  await prisma.card.createMany({
+    data: CARDS.map(([title, occasion, priceCents]) => ({
+      title,
+      occasion,
+      priceCents,
+      quantityOnHand: Math.floor(Math.random() * 40),
+    })),
+  });
+  console.log(`Seeded ${GIFTS.length} gifts and ${CARDS.length} cards.`);
 
   const customers: Customer[] = [];
   for (let i = 0; i < FIRST_NAMES.length; i++) {

@@ -46,6 +46,44 @@ model Inventory {
   @@map("inventory")
 }
 
+// Non-book merchandise the store also sells. Kept as its own table (not merged into
+// Book) so it carries no book-only fields like author/isbn. Stock is tracked inline
+// via quantityOnHand rather than the separate Inventory table -- gifts don't need the
+// reorder-threshold/status derivation books have. Money is integer cents, same rule.
+model Gift {
+  id             String   @id @default(uuid())
+  name           String
+  priceCents     Int      @map("price_cents")
+  // Free-form grouping, e.g. "mug" | "tote" | "stationery" | "puzzle".
+  category       String?
+  description    String?
+  imageUrl       String?  @map("image_url")
+  quantityOnHand Int         @default(0) @map("quantity_on_hand")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  orderItems     OrderItem[]
+
+  @@map("gifts")
+}
+
+// Greeting cards -- separate from Gift so card-specific grouping (occasion) stays
+// distinct. Same inline-stock, integer-cents conventions as Gift.
+model Card {
+  id             String   @id @default(uuid())
+  title          String
+  priceCents     Int      @map("price_cents")
+  // Occasion, e.g. "birthday" | "thank-you" | "holiday" | "sympathy" | "blank".
+  occasion       String?
+  description    String?
+  imageUrl       String?  @map("image_url")
+  quantityOnHand Int         @default(0) @map("quantity_on_hand")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  orderItems     OrderItem[]
+
+  @@map("cards")
+}
+
 model Customer {
   id                String               @id @default(uuid())
   firstName         String               @map("first_name")
@@ -88,13 +126,21 @@ model Order {
 }
 
 model OrderItem {
-  id             String @id @default(uuid())
-  orderId        String @map("order_id")
-  order          Order  @relation(fields: [orderId], references: [id])
-  bookId         String @map("book_id")
-  book           Book   @relation(fields: [bookId], references: [id])
+  id             String  @id @default(uuid())
+  orderId        String  @map("order_id")
+  order          Order   @relation(fields: [orderId], references: [id])
+  // An order line references exactly one product, from any of the three catalogs
+  // (books, gifts, cards). Exactly one of bookId/giftId/cardId is non-null -- enforced
+  // by a CHECK constraint in the migration, since Prisma can't model "exactly one of".
+  // unitPriceCents snapshots the price at order time regardless of product type.
+  bookId         String? @map("book_id")
+  book           Book?   @relation(fields: [bookId], references: [id])
+  giftId         String? @map("gift_id")
+  gift           Gift?   @relation(fields: [giftId], references: [id])
+  cardId         String? @map("card_id")
+  card           Card?   @relation(fields: [cardId], references: [id])
   quantity       Int
-  unitPriceCents Int    @map("unit_price_cents")
+  unitPriceCents Int     @map("unit_price_cents")
 
   @@map("order_items")
 }

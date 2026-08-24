@@ -7,7 +7,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { customer: true, items: { include: { book: true } } },
+    include: { customer: true, items: { include: { book: true, gift: true, card: true } } },
   });
   if (!order) {
     return fail("Order not found", 404, "NOT_FOUND");

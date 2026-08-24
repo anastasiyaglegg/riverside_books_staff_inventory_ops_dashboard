@@ -94,13 +94,48 @@ model Order {
 }
 
 model OrderItem {
-  id             String @id @default(uuid())
+  id             String  @id @default(uuid())
   orderId        String
-  order          Order  @relation(fields: [orderId], references: [id])
-  bookId         String
-  book           Book   @relation(fields: [bookId], references: [id])
+  order          Order   @relation(fields: [orderId], references: [id])
+  // Exactly one of bookId/giftId/cardId is set (DB CHECK constraint) -- a line
+  // references one product from any of the three catalogs. unitPriceCents snapshots
+  // the price at order time regardless of type.
+  bookId         String?
+  book           Book?   @relation(fields: [bookId], references: [id])
+  giftId         String?
+  gift           Gift?   @relation(fields: [giftId], references: [id])
+  cardId         String?
+  card           Card?   @relation(fields: [cardId], references: [id])
   quantity       Int
   unitPriceCents Int
+}
+
+// Non-book merchandise the store sells. Separate tables (not merged into Book) so
+// they carry no book-only fields; stock is inline via quantityOnHand.
+model Gift {
+  id             String @id @default(uuid())
+  name           String
+  priceCents     Int
+  category       String? // e.g. "mug" | "tote" | "stationery"
+  description    String?
+  imageUrl       String?
+  quantityOnHand Int     @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orderItems     OrderItem[]
+}
+
+model Card {
+  id             String @id @default(uuid())
+  title          String
+  priceCents     Int
+  occasion       String? // e.g. "birthday" | "thank-you" | "holiday"
+  description    String?
+  imageUrl       String?
+  quantityOnHand Int     @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orderItems     OrderItem[]
 }
 
 model Event {
@@ -164,7 +199,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | GET | `/inventory` | Staff | Full inventory view, filterable by `?status=` |
 | PATCH | `/inventory/:bookId` | Staff | Adjust `quantityOnHand`; recompute `status` server-side via `deriveStockStatus()` |
 | GET | `/orders` | Staff, or Public with `?customerId=` | Without `customerId`: full staff listing, filterable by `?status=`. With `customerId`: that customer's own order history, no staff session needed |
-| POST | `/orders` | Public | Create a pre-order (Product A). Body: `{ customerName, customerEmail? or customerPhone?, items: [{ bookId, quantity }] }`. Finds-or-creates the customer by email/phone -- no prior signup required |
+| POST | `/orders` | Public | Create a pre-order (Product A). Body: `{ customerName, customerEmail? or customerPhone?, items: [{ bookId \| giftId \| cardId, quantity }] }` -- each line references exactly one product from any of the three catalogs (books/gifts/cards). Finds-or-creates the customer by email/phone -- no prior signup required |
 | GET | `/orders/:id` | Public | Single order detail. Was staff-only; opened up so Product A can poll its own order without a customer-auth system (none exists yet) -- same "unguessable UUID" pattern as `/books/:id` |
 | PATCH | `/orders/:id/status` | Staff | Transition order status; reject invalid transitions |
 | GET | `/customers` | Staff | Search customers (`?q=` matches name/email/phone) -- added post-hoc for story B9 (Loyalty Lookup), not in the original table |
@@ -179,7 +214,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | POST | `/events/:id/tickets` | Public | Reserve a ticket (Product A). Body: `{ customerName, customerEmail? or customerPhone? }`. Rejects with `400` once `event.capacity` is reached (cancelled tickets don't count against it); finds-or-creates the customer same as `/orders` |
 | GET | `/policies` | Public | All store policies |
 | PATCH | `/policies/:key` | Staff | Edit a policy value |
-| POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId, quantity }], customerId? }`. Amounts priced server-side from `Book.priceCents`; returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
+| POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId \| giftId \| cardId, quantity }], customerId? }`. Amounts priced server-side from the referenced product's `priceCents` (book/gift/card); returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
 | GET | `/checkout/session?session_id=` | Public | Session status + linked `orderId` (once the webhook has written it), for the return page |
 | POST | `/webhooks/stripe` | Stripe (signed) | Payment webhook. Verifies the signature, and on `checkout.session.completed` (paid) writes the `Order` (`paid_online`), idempotent by `stripeSessionId`. This is where fulfillment happens, never the return page |
 
