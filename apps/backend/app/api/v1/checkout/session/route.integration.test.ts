@@ -38,7 +38,7 @@ describe("POST /api/v1/checkout/session", () => {
     expect(response.status).toBe(200);
     expect(body.data.clientSecret).toBe("cs_test_secret");
     const [args] = create.mock.calls[0]!;
-    expect(args.ui_mode).toBe("embedded");
+    expect(args.ui_mode).toBe("embedded_page");
     expect(args.payment_method_types).toBeUndefined(); // dynamic payment methods
     expect(args.line_items[0].price_data.unit_amount).toBe(1999); // from DB, not client
     expect(args.line_items[0].quantity).toBe(2);

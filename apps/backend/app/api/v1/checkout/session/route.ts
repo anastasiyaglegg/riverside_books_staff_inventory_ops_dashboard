@@ -30,7 +30,10 @@ export async function POST(request: Request) {
   }
 
   const session = await getStripe().checkout.sessions.create({
-    ui_mode: "embedded",
+    // "embedded_page" is the current name for the full embedded Checkout form (the API
+    // renamed it from "embedded"); it's what @stripe/react-stripe-js EmbeddedCheckout
+    // mounts, still returning a client_secret.
+    ui_mode: "embedded_page",
     mode: "payment",
     line_items: resolved.lineItems,
     return_url: checkoutReturnUrl(),
