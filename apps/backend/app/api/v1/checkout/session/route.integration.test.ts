@@ -44,6 +44,40 @@ describe("POST /api/v1/checkout/session", () => {
     expect(args.line_items[0].quantity).toBe(2);
   });
 
+  it("prefills the email for a signed-in customer (checkout as user)", async () => {
+    const book = await seedBook(1000);
+    const customer = await prisma.customer.create({
+      data: { firstName: "Ada", lastName: "Reader", email: "ada@example.com" },
+    });
+
+    await POST(
+      new Request("http://localhost/api/v1/checkout/session", {
+        method: "POST",
+        body: JSON.stringify({
+          items: [{ bookId: book.id, quantity: 1 }],
+          customerId: customer.id,
+        }),
+      }),
+    );
+
+    const [args] = create.mock.calls[0]!;
+    expect(args.customer_email).toBe("ada@example.com");
+    expect(args.metadata.customerId).toBe(customer.id);
+  });
+
+  it("omits the email for a guest (no customerId)", async () => {
+    const book = await seedBook(1000);
+    await POST(
+      new Request("http://localhost/api/v1/checkout/session", {
+        method: "POST",
+        body: JSON.stringify({ items: [{ bookId: book.id, quantity: 1 }] }),
+      }),
+    );
+    const [args] = create.mock.calls[0]!;
+    expect(args.customer_email).toBeUndefined();
+    expect(args.metadata.customerId).toBe("");
+  });
+
   it("rejects a cart referencing an unknown book", async () => {
     const response = await POST(
       new Request("http://localhost/api/v1/checkout/session", {

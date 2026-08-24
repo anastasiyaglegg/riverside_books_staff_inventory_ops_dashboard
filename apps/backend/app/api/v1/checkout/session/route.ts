@@ -21,11 +21,20 @@ export async function POST(request: Request) {
     return fail("One or more books in your cart were not found", 400, "INVALID_ITEMS");
   }
 
+  // A signed-in customer checks out "as themselves": prefill Stripe's email field from
+  // their record so they don't retype it (guests just enter it in the form).
+  let customerEmail: string | undefined;
+  if (customerId) {
+    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    customerEmail = customer?.email ?? undefined;
+  }
+
   const session = await getStripe().checkout.sessions.create({
     ui_mode: "embedded",
     mode: "payment",
     line_items: resolved.lineItems,
     return_url: checkoutReturnUrl(),
+    ...(customerEmail && { customer_email: customerEmail }),
     // Carry the cart + customer through to the webhook, which is what actually writes the
     // order. payment_method_types is intentionally omitted (dynamic payment methods).
     metadata: { items: JSON.stringify(items), customerId: customerId ?? "" },
