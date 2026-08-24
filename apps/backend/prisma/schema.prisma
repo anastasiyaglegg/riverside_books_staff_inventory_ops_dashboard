@@ -48,7 +48,11 @@ model Inventory {
 
 model Customer {
   id                String               @id @default(uuid())
-  name              String
+  firstName         String               @map("first_name")
+  // Optional: guest-checkout and one-name customers may only have a first name; the
+  // signup form + POST /customers require both, but the column stays nullable so those
+  // paths (and legacy rows) remain valid.
+  lastName          String?              @map("last_name")
   email             String?              @unique
   phone             String?              @unique
   // Firebase Auth uid (customer sign-in, Product A). Nullable because staff-created and

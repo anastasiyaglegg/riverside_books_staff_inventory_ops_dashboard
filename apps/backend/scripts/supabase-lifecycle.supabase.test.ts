@@ -110,7 +110,11 @@ describe("Supabase deployed schema -- full table lifecycle", () => {
 
   it("creates a customer", async () => {
     const customer = await prisma.customer.create({
-      data: { name: `Lifecycle Test Customer ${runId}`, email: `lifecycle-${runId}@example.com` },
+      data: {
+        firstName: "Lifecycle",
+        lastName: `Test Customer ${runId}`,
+        email: `lifecycle-${runId}@example.com`,
+      },
     });
     createdIds.customerId = customer.id;
     expect(customer.loyaltyStampCount).toBe(0);

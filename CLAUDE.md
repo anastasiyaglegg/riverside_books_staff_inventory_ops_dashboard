@@ -70,7 +70,8 @@ model Inventory {
 
 model Customer {
   id                 String   @id @default(uuid())
-  name               String
+  firstName          String
+  lastName           String?  // optional: guest-checkout / one-name customers may lack it; signup requires both
   email              String?  @unique
   phone              String?  @unique
   firebaseUid        String?  @unique // Firebase Auth uid (Product A customer sign-in); null for staff/guest-created rows

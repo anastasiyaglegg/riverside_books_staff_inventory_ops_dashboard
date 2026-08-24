@@ -10,7 +10,7 @@ beforeEach(async () => {
 describe("GET /api/v1/orders/:id", () => {
   it("returns a single order's detail, without auth", async () => {
     const customer = await prisma.customer.create({
-      data: { name: "Jane Doe", email: "jane@example.com" },
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
     });
     const order = await prisma.order.create({
       data: {
@@ -28,7 +28,7 @@ describe("GET /api/v1/orders/:id", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.id).toBe(order.id);
-    expect(body.data.customer.name).toBe("Jane Doe");
+    expect(body.data.customer.firstName).toBe("Jane");
   });
 
   it("returns 404 for an unknown id", async () => {

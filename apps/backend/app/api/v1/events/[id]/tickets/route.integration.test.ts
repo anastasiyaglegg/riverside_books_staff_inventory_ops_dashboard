@@ -32,7 +32,7 @@ describe("POST /api/v1/events/:id/tickets", () => {
       data: { title: "Small Event", eventDate: new Date("2026-09-01"), capacity: 1 },
     });
     const customer = await prisma.customer.create({
-      data: { name: "Existing", email: "existing@example.com" },
+      data: { firstName: "Existing", email: "existing@example.com" },
     });
     await prisma.eventTicket.create({
       data: { eventId: event.id, customerId: customer.id, status: "reserved" },
@@ -53,7 +53,7 @@ describe("POST /api/v1/events/:id/tickets", () => {
       data: { title: "Small Event", eventDate: new Date("2026-09-01"), capacity: 1 },
     });
     const customer = await prisma.customer.create({
-      data: { name: "Existing", email: "existing@example.com" },
+      data: { firstName: "Existing", email: "existing@example.com" },
     });
     await prisma.eventTicket.create({
       data: { eventId: event.id, customerId: customer.id, status: "cancelled" },

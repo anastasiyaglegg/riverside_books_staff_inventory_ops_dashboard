@@ -1,7 +1,26 @@
 import type { Customer } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export type CustomerIdentity = { name: string; email?: string; phone?: string };
+// lastName optional: guest-checkout flows (POST /orders, /events/:id/tickets) collect a
+// single name, so they pass firstName only.
+export type CustomerIdentity = {
+  firstName: string;
+  lastName?: string | null;
+  email?: string;
+  phone?: string;
+};
+
+// Splits a display name ("Ada Lovelace") into first/last for the rare create-fallback in
+// resolveCustomerForFirebaseUser. Everything before the first space is the first name;
+// the remainder (if any) is the last name.
+function splitName(fullName: string): { firstName: string; lastName: string | null } {
+  const trimmed = fullName.trim();
+  const gap = trimmed.indexOf(" ");
+  if (gap === -1) {
+    return { firstName: trimmed, lastName: null };
+  }
+  return { firstName: trimmed.slice(0, gap), lastName: trimmed.slice(gap + 1).trim() || null };
+}
 
 // Verified Firebase claims for the signed-in customer (from requireCustomerSession).
 export type FirebaseCustomerClaims = {
@@ -52,9 +71,14 @@ export async function resolveCustomerForFirebaseUser(
     }
   }
 
+  // No row for this uid or email: create one. Email/password sign-ups carry no name
+  // claim, so fall back to the email local-part; the frontend's POST /customers (with
+  // real first/last name) is the normal path -- this is the edge case.
+  const { firstName, lastName } = splitName(claims.name ?? claims.email ?? "Customer");
   const created = await prisma.customer.create({
     data: {
-      name: claims.name ?? claims.email ?? "Customer",
+      firstName,
+      lastName,
       email: claims.email ?? undefined,
       firebaseUid: claims.uid,
     },

@@ -32,7 +32,8 @@ describe("GET /api/v1/customers/me", () => {
   it("returns the customer already linked by firebaseUid", async () => {
     const linked = await prisma.customer.create({
       data: {
-        name: "Ada Reader",
+        firstName: "Ada",
+        lastName: "Reader",
         email: "reader@example.com",
         firebaseUid: FIREBASE_UID,
         loyaltyStampCount: 5,
@@ -49,7 +50,12 @@ describe("GET /api/v1/customers/me", () => {
 
   it("links an existing email-matched row when the Firebase email is verified", async () => {
     const existing = await prisma.customer.create({
-      data: { name: "Ada Reader", email: "reader@example.com", loyaltyStampCount: 3 },
+      data: {
+        firstName: "Ada",
+        lastName: "Reader",
+        email: "reader@example.com",
+        loyaltyStampCount: 3,
+      },
     });
 
     const response = await GET(new Request("http://localhost/api/v1/customers/me"));
@@ -65,7 +71,7 @@ describe("GET /api/v1/customers/me", () => {
   it("refuses to link an email-matched row when the email is unverified (403)", async () => {
     authAs({ emailVerified: false });
     await prisma.customer.create({
-      data: { name: "Ada Reader", email: "reader@example.com" },
+      data: { firstName: "Ada", lastName: "Reader", email: "reader@example.com" },
     });
 
     const response = await GET(new Request("http://localhost/api/v1/customers/me"));
@@ -84,7 +90,9 @@ describe("GET /api/v1/customers/me", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.firebaseUid).toBe(FIREBASE_UID);
-    expect(body.data.name).toBe("Ada Reader");
+    // claims.name "Ada Reader" is split into first/last for the create-fallback.
+    expect(body.data.firstName).toBe("Ada");
+    expect(body.data.lastName).toBe("Reader");
     expect(body.data.loyaltyStampCount).toBe(0);
   });
 

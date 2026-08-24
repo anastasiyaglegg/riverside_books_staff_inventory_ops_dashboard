@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   const totalCents = orderItems.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
 
   const customer = await findOrCreateCustomer({
-    name: customerName,
+    firstName: customerName,
     email: customerEmail,
     phone: customerPhone,
   });

@@ -547,7 +547,8 @@ async function main() {
     const useEmail = Math.random() > 0.1;
     const customer = await prisma.customer.create({
       data: {
-        name: `${first} ${last}`,
+        firstName: first,
+        lastName: last,
         email: useEmail ? `${first.toLowerCase()}.${last.toLowerCase()}${i}@example.com` : null,
         phone: useEmail ? null : `555-${String(1000 + i).padStart(4, "0")}`,
         loyaltyStampCount,

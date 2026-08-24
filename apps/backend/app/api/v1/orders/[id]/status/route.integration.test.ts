@@ -17,7 +17,7 @@ beforeEach(async () => {
 
 async function makeOrder(status: string) {
   const customer = await prisma.customer.create({
-    data: { name: "Jane Doe", email: "jane@example.com" },
+    data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
   });
   return prisma.order.create({
     data: { customerId: customer.id, status, paymentStatus: "unpaid", totalCents: 1000 },
