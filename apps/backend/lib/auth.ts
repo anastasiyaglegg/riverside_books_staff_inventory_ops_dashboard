@@ -10,7 +10,7 @@ type Unauthorized = { authorized: false };
 export type CustomerSession = {
   authorized: true;
   // Verified Firebase claims -- never trust these from the client body.
-  user: { uid: string; email: string | null; emailVerified: boolean };
+  user: { uid: string; email: string | null; emailVerified: boolean; name: string | null };
 };
 
 function extractBearer(request: Request): string | null {
@@ -83,6 +83,7 @@ export async function requireCustomerSession(
       uid: decoded.uid,
       email: decoded.email ?? null,
       emailVerified: decoded.email_verified ?? false,
+      name: decoded.name ?? null,
     },
   };
 }
