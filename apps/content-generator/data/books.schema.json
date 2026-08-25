@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://riverside.example/schemas/book-collection.json",
+  "title": "Riverside Books catalog collection",
+  "description": "A collection of shared book catalog records consumed by Product D.",
+  "type": "array",
+  "items": {
+    "$ref": "book-record.json"
+  }
+}

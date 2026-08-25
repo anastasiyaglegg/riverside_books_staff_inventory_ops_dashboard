@@ -1,0 +1,46 @@
+[
+  {
+    "book_id": "RB-EDGE-NULL-TAG",
+    "title": "A Window for Every Season",
+    "author": "Nora Fields",
+    "genre": "Contemporary Fiction",
+    "price": 14.00,
+    "stock_status": "in_stock",
+    "description": "A warm, reflective novel about change, friendship, and the small choices that shape a life.",
+    "rating": 3.8,
+    "promotional_tag": null
+  },
+  {
+    "book_id": "RB-EDGE-OUT-STOCK",
+    "title": "The Last Orchard",
+    "author": "Eli Mercer",
+    "genre": "Literary Fiction",
+    "price": 21.25,
+    "stock_status": "out_of_stock",
+    "description": "A multigenerational story of family, land, and the promises we inherit.",
+    "rating": 4.9,
+    "promotional_tag": "Staff Pick"
+  },
+  {
+    "book_id": "RB-EDGE-RATING-MIN",
+    "title": "First Steps in Astronomy",
+    "author": "Rhea Patel",
+    "genre": "Science",
+    "price": 12.50,
+    "stock_status": "in_stock",
+    "description": "An accessible introduction to the night sky for curious new stargazers.",
+    "rating": 0,
+    "promotional_tag": "New Release"
+  },
+  {
+    "book_id": "RB-EDGE-RATING-MAX",
+    "title": "The Blue Hour Kitchen",
+    "author": "Samira Cole",
+    "genre": "Cookbook",
+    "price": 32.99,
+    "stock_status": "low_stock",
+    "description": "Seasonal recipes and hosting ideas for relaxed meals shared with good company.",
+    "rating": 5,
+    "promotional_tag": "Bestseller"
+  }
+]
