@@ -20,6 +20,13 @@ export type Inventory = {
   updatedAt: string;
 };
 
+// A staff-generated promotional blurb for a book (Product D, mediated through
+// apps/backend). Null until staff generate one for that title.
+export type MarketingContent = {
+  headline: string;
+  bodyCopy: string;
+};
+
 export type Book = {
   id: string;
   title: string;
@@ -34,6 +41,7 @@ export type Book = {
   createdAt: string;
   updatedAt: string;
   inventory?: Inventory | null;
+  marketingContent?: MarketingContent | null;
 };
 
 // Non-book merchandise. Mirrors the backend Gift model: stock is tracked inline via

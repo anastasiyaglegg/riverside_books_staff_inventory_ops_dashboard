@@ -134,6 +134,15 @@ export function BookDetailPage() {
         </div>
         {book.description && <p className="mt-4 text-stone-700">{book.description}</p>}
 
+        {book.marketingContent && (
+          <div className="mt-6 rounded-2xl border border-brand-200 bg-brand-50 p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-700">
+              {book.marketingContent.headline}
+            </h2>
+            <p className="mt-2 text-stone-700">{book.marketingContent.bodyCopy}</p>
+          </div>
+        )}
+
         <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-stone-900">Pre-order for pickup</h2>
           <p className="mt-1 text-sm text-stone-500">
