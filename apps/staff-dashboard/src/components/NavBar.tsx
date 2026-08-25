@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 const LINKS = [
   { to: "/inventory", label: "Inventory" },
   { to: "/merchandise", label: "Gifts & Cards" },
-  { to: "/marketing", label: "Marketing Content" },
+  { to: "/marketing", label: "Marketing Content", end: true },
+  { to: "/marketing/storefront", label: "Generate for Storefront" },
   { to: "/orders", label: "Pre-Order Queue", end: true },
   { to: "/orders/history", label: "Order History" },
   { to: "/loyalty", label: "Loyalty" },

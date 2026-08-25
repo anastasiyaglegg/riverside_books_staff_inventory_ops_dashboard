@@ -92,10 +92,14 @@ export function MarketingContentPage() {
         </button>
       </div>
       <p>
-        Pick books and generate promotional copy via Product D. A book needs a{" "}
-        <em>description</em> and a <em>rating</em> set (Add/Edit Book) before it
-        can generate -- see the results below for exactly which books were
-        skipped and why.
+        Pick real books from the catalog and generate promotional copy via
+        Product D -- results save automatically and appear on that book's page
+        on the storefront. A book needs a <em>description</em> and a{" "}
+        <em>rating</em> set (Add/Edit Book) before it can generate -- see the
+        results below for exactly which books were skipped and why. (The{" "}
+        <em>Marketing Content</em> tab is Product D's own playground for pasting
+        arbitrary catalog JSON -- handy for testing, but nothing generated there
+        is saved or shown to customers.)
       </p>
 
       {error && <p className="form-error">{error}</p>}

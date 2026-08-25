@@ -6,6 +6,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { InventoryPage } from "@/pages/InventoryPage";
 import { MerchandisePage } from "@/pages/MerchandisePage";
 import { MarketingEmbedPage } from "@/pages/MarketingEmbedPage";
+import { MarketingContentPage } from "@/pages/MarketingContentPage";
 import { BookFormPage } from "@/pages/BookFormPage";
 import { OrdersQueuePage } from "@/pages/OrdersQueuePage";
 import { OrderHistoryPage } from "@/pages/OrderHistoryPage";
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <AuthedLayout>
             <MarketingEmbedPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
+        path="/marketing/storefront"
+        element={
+          <AuthedLayout>
+            <MarketingContentPage />
           </AuthedLayout>
         }
       />
