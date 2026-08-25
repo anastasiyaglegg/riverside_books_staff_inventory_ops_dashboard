@@ -5,7 +5,7 @@ import { NavBar } from "@/components/NavBar";
 import { LoginPage } from "@/pages/LoginPage";
 import { InventoryPage } from "@/pages/InventoryPage";
 import { MerchandisePage } from "@/pages/MerchandisePage";
-import { MarketingContentPage } from "@/pages/MarketingContentPage";
+import { MarketingEmbedPage } from "@/pages/MarketingEmbedPage";
 import { BookFormPage } from "@/pages/BookFormPage";
 import { OrdersQueuePage } from "@/pages/OrdersQueuePage";
 import { OrderHistoryPage } from "@/pages/OrderHistoryPage";
@@ -81,7 +81,7 @@ function AppRoutes() {
         path="/marketing"
         element={
           <AuthedLayout>
-            <MarketingContentPage />
+            <MarketingEmbedPage />
           </AuthedLayout>
         }
       />
