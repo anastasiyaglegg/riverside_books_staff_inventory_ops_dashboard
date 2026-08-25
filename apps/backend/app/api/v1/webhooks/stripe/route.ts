@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { resolveCart, type CartItem } from "@/lib/checkout";
 import { findOrCreateCustomer, splitName } from "@/lib/customers";
+import { decrementStockForOrderItems } from "@/lib/fulfillment";
 import { prisma } from "@/lib/prisma";
 
 // Stripe payment webhook. Fulfillment (writing the paid order) happens HERE, not on the
@@ -69,14 +70,18 @@ async function fulfillCheckout(session: Stripe.Checkout.Session): Promise<void> 
     customerId = customer.id;
   }
 
-  await prisma.order.create({
-    data: {
-      customerId,
-      status: "placed",
-      paymentStatus: "paid_online",
-      totalCents: resolved.totalCents,
-      stripeSessionId: session.id,
-      items: { create: resolved.orderItems },
-    },
+  // Persist the paid order and reserve its stock atomically -- same rule as POST /orders.
+  await prisma.$transaction(async (tx) => {
+    await tx.order.create({
+      data: {
+        customerId,
+        status: "placed",
+        paymentStatus: "paid_online",
+        totalCents: resolved.totalCents,
+        stripeSessionId: session.id,
+        items: { create: resolved.orderItems },
+      },
+    });
+    await decrementStockForOrderItems(tx, resolved.orderItems);
   });
 }

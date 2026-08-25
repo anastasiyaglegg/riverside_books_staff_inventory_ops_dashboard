@@ -10,3 +10,17 @@ export const listGiftsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
+
+// Staff edit of a gift, including restocking via quantityOnHand. All fields optional --
+// callers PATCH just what changed -- but at least one is required.
+export const updateGiftSchema = z
+  .object({
+    name: z.string().min(1),
+    priceCents: z.number().int().nonnegative(),
+    category: z.string().nullable(),
+    description: z.string().nullable(),
+    imageUrl: z.string().url().nullable(),
+    quantityOnHand: z.number().int().nonnegative(),
+  })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, { message: "No fields to update" });

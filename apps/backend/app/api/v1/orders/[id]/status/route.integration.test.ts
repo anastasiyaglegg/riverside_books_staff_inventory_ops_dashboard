@@ -91,4 +91,103 @@ describe("PATCH /api/v1/orders/:id/status", () => {
     );
     expect(response.status).toBe(401);
   });
+
+  it("awards one loyalty stamp when an order is completed", async () => {
+    const customer = await prisma.customer.create({
+      data: { firstName: "Loyal", lastName: "Reader", email: "loyal@example.com" },
+    });
+    const order = await prisma.order.create({
+      data: {
+        customerId: customer.id,
+        status: "ready_for_pickup",
+        paymentStatus: "unpaid",
+        totalCents: 1000,
+      },
+    });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/v1/orders/${order.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "completed" }),
+      }),
+      { params: Promise.resolve({ id: order.id }) },
+    );
+    expect(response.status).toBe(200);
+
+    const updated = await prisma.customer.findUnique({ where: { id: customer.id } });
+    expect(updated?.loyaltyStampCount).toBe(1);
+    const tx = await prisma.loyaltyTransaction.findFirst({ where: { customerId: customer.id } });
+    expect(tx?.type).toBe("earn");
+    expect(tx?.relatedOrderId).toBe(order.id);
+  });
+
+  it("restores reserved stock when an order is cancelled", async () => {
+    // Book stock already reflects the reservation (5 on hand, 2 sold on this order).
+    const book = await prisma.book.create({
+      data: {
+        title: "Reserved Book",
+        author: "A. Author",
+        priceCents: 1000,
+        inventory: { create: { quantityOnHand: 5, reorderThreshold: 2, status: "in_stock" } },
+      },
+    });
+    const gift = await prisma.gift.create({
+      data: { name: "Enamel Mug", priceCents: 1200, quantityOnHand: 4 },
+    });
+    const customer = await prisma.customer.create({
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
+    });
+    const order = await prisma.order.create({
+      data: {
+        customerId: customer.id,
+        status: "placed",
+        paymentStatus: "unpaid",
+        totalCents: 3200,
+        items: {
+          create: [
+            { bookId: book.id, quantity: 2, unitPriceCents: 1000 },
+            { giftId: gift.id, quantity: 1, unitPriceCents: 1200 },
+          ],
+        },
+      },
+    });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/v1/orders/${order.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "cancelled" }),
+      }),
+      { params: Promise.resolve({ id: order.id }) },
+    );
+    expect(response.status).toBe(200);
+
+    const inventory = await prisma.inventory.findUnique({ where: { bookId: book.id } });
+    expect(inventory?.quantityOnHand).toBe(7); // 5 + 2 restored
+    expect((await prisma.gift.findUnique({ where: { id: gift.id } }))?.quantityOnHand).toBe(5); // 4 + 1
+  });
+
+  it("does not award a stamp when an order is cancelled", async () => {
+    const customer = await prisma.customer.create({
+      data: { firstName: "Jane", lastName: "Doe", email: "jane@example.com" },
+    });
+    const order = await prisma.order.create({
+      data: {
+        customerId: customer.id,
+        status: "placed",
+        paymentStatus: "unpaid",
+        totalCents: 1000,
+      },
+    });
+
+    await PATCH(
+      new Request(`http://localhost/api/v1/orders/${order.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "cancelled" }),
+      }),
+      { params: Promise.resolve({ id: order.id }) },
+    );
+
+    const updated = await prisma.customer.findUnique({ where: { id: customer.id } });
+    expect(updated?.loyaltyStampCount).toBe(0);
+  });
 });

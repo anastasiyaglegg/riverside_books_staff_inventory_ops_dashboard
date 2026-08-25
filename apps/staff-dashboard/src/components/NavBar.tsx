@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth-context";
 
 const LINKS = [
   { to: "/inventory", label: "Inventory" },
+  { to: "/merchandise", label: "Gifts & Cards" },
   { to: "/orders", label: "Pre-Order Queue" },
   { to: "/loyalty", label: "Loyalty" },
   { to: "/events", label: "Events" },
