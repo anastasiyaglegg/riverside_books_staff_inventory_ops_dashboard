@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 const LINKS = [
   { to: "/inventory", label: "Inventory" },
   { to: "/merchandise", label: "Gifts & Cards" },
-  { to: "/orders", label: "Pre-Order Queue" },
+  { to: "/orders", label: "Pre-Order Queue", end: true },
+  { to: "/orders/history", label: "Order History" },
   { to: "/loyalty", label: "Loyalty" },
   { to: "/events", label: "Events" },
   { to: "/policies", label: "Store Policies" },
@@ -22,6 +23,7 @@ export function NavBar() {
           <NavLink
             key={link.to}
             to={link.to}
+            end={link.end}
             className={({ isActive }) =>
               isActive ? "navbar-link active" : "navbar-link"
             }
