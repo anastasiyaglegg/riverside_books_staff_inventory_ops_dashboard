@@ -60,14 +60,51 @@ export function customerFullName(customer: {
     : customer.firstName;
 }
 
+export type Gift = {
+  id: string;
+  name: string;
+  priceCents: number;
+  category: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  quantityOnHand: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Card = {
+  id: string;
+  title: string;
+  priceCents: number;
+  occasion: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  quantityOnHand: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// An order line references exactly one of book/gift/card (mirrors the backend's
+// OrderItem -- see CLAUDE.md "Database Schema").
 export type OrderItem = {
   id: string;
   orderId: string;
-  bookId: string;
+  bookId: string | null;
+  book?: Book | null;
+  giftId: string | null;
+  gift?: Gift | null;
+  cardId: string | null;
+  card?: Card | null;
   quantity: number;
   unitPriceCents: number;
-  book?: Book;
 };
+
+// The product an order line refers to, whichever of the three it is.
+export function orderItemProductName(item: OrderItem): string {
+  return (
+    item.book?.title ?? item.gift?.name ?? item.card?.title ?? "Unknown item"
+  );
+}
 
 export type Order = {
   id: string;

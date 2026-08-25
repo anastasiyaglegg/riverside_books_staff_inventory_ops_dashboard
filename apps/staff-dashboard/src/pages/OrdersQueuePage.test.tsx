@@ -71,6 +71,41 @@ describe("OrdersQueuePage", () => {
     expect(screen.queryByText("Already Done")).not.toBeInTheDocument();
   });
 
+  it("shows gift and card line items by their own name, not the book field", async () => {
+    apiGet.mockResolvedValue([
+      {
+        ...ORDERS[0],
+        items: [
+          {
+            id: "item-1",
+            orderId: "order-1",
+            bookId: null,
+            giftId: "gift-1",
+            gift: { id: "gift-1", name: "Enamel Mug", priceCents: 1200 },
+            cardId: null,
+            quantity: 2,
+            unitPriceCents: 1200,
+          },
+          {
+            id: "item-2",
+            orderId: "order-1",
+            bookId: null,
+            giftId: null,
+            cardId: "card-1",
+            card: { id: "card-1", title: "Birthday Card", priceCents: 500 },
+            quantity: 1,
+            unitPriceCents: 500,
+          },
+        ],
+      },
+    ]);
+    render(<OrdersQueuePage />);
+
+    expect(
+      await screen.findByText("2× Enamel Mug, 1× Birthday Card"),
+    ).toBeInTheDocument();
+  });
+
   it("transitions an order to ready_for_pickup", async () => {
     apiGet.mockResolvedValue(ORDERS);
     apiPatch.mockResolvedValue({ ...ORDERS[0], status: "ready_for_pickup" });
