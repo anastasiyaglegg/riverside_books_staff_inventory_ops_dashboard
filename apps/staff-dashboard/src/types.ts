@@ -137,3 +137,39 @@ export type StorePolicy = {
   value: string;
   updatedAt: string;
 };
+
+// Mirrors MarketingDraft.as_dict() in apps/content-generator's
+// riverside_marketing/generation/drafts.py, via apps/backend's
+// lib/marketing/client.ts.
+export type MarketingDraft = {
+  book_id: string;
+  content_type: string;
+  headline: string;
+  body_copy: string;
+  reason: string;
+  source_fields: string[];
+};
+
+export type ValidationDiagnostic = {
+  index: number;
+  book_id: string | null;
+  valid: boolean;
+  errors: { path: string; message: string }[];
+};
+
+export type RejectedRecord = {
+  index: number;
+  record: unknown;
+};
+
+export type MarketingGenerationResult = {
+  generated_drafts: MarketingDraft[];
+  rejected_records: RejectedRecord[];
+  validation_diagnostics: ValidationDiagnostic[];
+  summary: {
+    total_records: number;
+    valid_records: number;
+    rejected_records: number;
+    generated_drafts: number;
+  };
+};
