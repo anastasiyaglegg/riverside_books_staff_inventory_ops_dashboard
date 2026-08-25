@@ -66,7 +66,16 @@ describe("POST /api/v1/marketing/generate", () => {
       },
     });
     generateMarketingContent.mockResolvedValue({
-      generated_drafts: [{ book_id: book.id }],
+      generated_drafts: [
+        {
+          book_id: book.id,
+          content_type: "promotional_description",
+          headline: "A must-read",
+          body_copy: "Discover Small Hours in Orbit by Jon Bell.",
+          reason: "Deterministic template",
+          source_fields: ["title", "author"],
+        },
+      ],
       rejected_records: [],
       validation_diagnostics: [],
       summary: { total_records: 1, valid_records: 1, rejected_records: 0, generated_drafts: 1 },
@@ -91,6 +100,71 @@ describe("POST /api/v1/marketing/generate", () => {
         promotional_tag: null,
       },
     ]);
+  });
+
+  it("persists a generated draft as the book's marketing content", async () => {
+    const book = await prisma.book.create({
+      data: { title: "First Light", author: "Anya Voss", priceCents: 1500 },
+    });
+    generateMarketingContent.mockResolvedValue({
+      generated_drafts: [
+        {
+          book_id: book.id,
+          content_type: "promotional_description",
+          headline: "A must-read",
+          body_copy: "Discover First Light by Anya Voss.",
+          reason: "Deterministic template",
+          source_fields: ["title", "author"],
+        },
+      ],
+      rejected_records: [],
+      validation_diagnostics: [],
+      summary: { total_records: 1, valid_records: 1, rejected_records: 0, generated_drafts: 1 },
+    });
+
+    await post({ bookIds: [book.id] });
+
+    const saved = await prisma.bookMarketingContent.findUnique({ where: { bookId: book.id } });
+    expect(saved?.headline).toBe("A must-read");
+    expect(saved?.bodyCopy).toBe("Discover First Light by Anya Voss.");
+    expect(saved?.sourceFields).toEqual(["title", "author"]);
+  });
+
+  it("overwrites the prior draft when a book is regenerated", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Second Edition", author: "Anya Voss", priceCents: 1500 },
+    });
+    await prisma.bookMarketingContent.create({
+      data: {
+        bookId: book.id,
+        contentType: "promotional_description",
+        headline: "Old headline",
+        bodyCopy: "Old copy.",
+        reason: "Old reason",
+        sourceFields: ["title"],
+      },
+    });
+    generateMarketingContent.mockResolvedValue({
+      generated_drafts: [
+        {
+          book_id: book.id,
+          content_type: "promotional_description",
+          headline: "New headline",
+          body_copy: "New copy.",
+          reason: "New reason",
+          source_fields: ["title", "author"],
+        },
+      ],
+      rejected_records: [],
+      validation_diagnostics: [],
+      summary: { total_records: 1, valid_records: 1, rejected_records: 0, generated_drafts: 1 },
+    });
+
+    await post({ bookIds: [book.id] });
+
+    const rows = await prisma.bookMarketingContent.findMany({ where: { bookId: book.id } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.headline).toBe("New headline");
   });
 
   it("omits rating/description/genre/stock_status for a book missing them, rather than failing", async () => {

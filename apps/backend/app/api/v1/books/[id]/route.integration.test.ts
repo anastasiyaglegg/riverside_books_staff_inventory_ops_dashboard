@@ -35,6 +35,43 @@ describe("GET /api/v1/books/:id", () => {
     expect(body.data.inventory.status).toBe("low_stock");
   });
 
+  it("returns null marketingContent when none has been generated", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Unrated", author: "A", priceCents: 1000 },
+    });
+
+    const response = await GET(new Request(`http://localhost/api/v1/books/${book.id}`), {
+      params: Promise.resolve({ id: book.id }),
+    });
+    const body = await response.json();
+
+    expect(body.data.marketingContent).toBeNull();
+  });
+
+  it("returns generated marketingContent when present", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Promoted", author: "A", priceCents: 1000 },
+    });
+    await prisma.bookMarketingContent.create({
+      data: {
+        bookId: book.id,
+        contentType: "promotional_description",
+        headline: "A must-read",
+        bodyCopy: "Discover Promoted by A.",
+        reason: "Deterministic template",
+        sourceFields: ["title", "author"],
+      },
+    });
+
+    const response = await GET(new Request(`http://localhost/api/v1/books/${book.id}`), {
+      params: Promise.resolve({ id: book.id }),
+    });
+    const body = await response.json();
+
+    expect(body.data.marketingContent.headline).toBe("A must-read");
+    expect(body.data.marketingContent.bodyCopy).toBe("Discover Promoted by A.");
+  });
+
   it("returns 404 for an unknown id", async () => {
     const response = await GET(new Request("http://localhost/api/v1/books/missing"), {
       params: Promise.resolve({ id: "00000000-0000-0000-0000-000000000000" }),

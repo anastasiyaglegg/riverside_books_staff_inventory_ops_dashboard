@@ -8,6 +8,7 @@ export async function resetDb() {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.inventory.deleteMany();
+  await prisma.bookMarketingContent.deleteMany();
   await prisma.book.deleteMany();
   await prisma.gift.deleteMany();
   await prisma.card.deleteMany();
