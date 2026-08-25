@@ -18,6 +18,10 @@ export const createBookSchema = z.object({
   category: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
+  // Staff-entered average rating, 0-5. Optional -- unset until a staff member rates it;
+  // never inferred or defaulted (Product D's mediation layer skips unrated books rather
+  // than invent a value -- see lib/marketing/catalog-mapper.ts).
+  rating: z.number().min(0).max(5).optional(),
   // Initial stock -- creates the paired Inventory row.
   quantityOnHand: z.number().int().nonnegative().default(0),
   reorderThreshold: z.number().int().nonnegative().default(2),
@@ -32,6 +36,7 @@ export const updateBookSchema = z
     category: z.string().nullable(),
     description: z.string().nullable(),
     imageUrl: z.string().url().nullable(),
+    rating: z.number().min(0).max(5).nullable(),
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, { message: "No fields to update" });
