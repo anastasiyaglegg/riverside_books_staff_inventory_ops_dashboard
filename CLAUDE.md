@@ -57,6 +57,24 @@ model Book {
   updatedAt   DateTime @updatedAt
   inventory   Inventory?
   orderItems  OrderItem[]
+  marketingContent BookMarketingContent?
+}
+
+// The most recently generated Product D marketing draft for a book -- one row per book,
+// regenerating overwrites it. Populated by POST /marketing/generate, read publicly via
+// GET /books/:id so the customer app can display it. See "apps/content-generator" note
+// under the API table.
+model BookMarketingContent {
+  id           String   @id @default(uuid())
+  bookId       String   @unique
+  book         Book     @relation(fields: [bookId], references: [id])
+  contentType  String   // Product D's ContentType, e.g. "promotional_description"
+  headline     String
+  bodyCopy     String
+  reason       String
+  sourceFields String[]
+  generatedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Inventory {
@@ -194,7 +212,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | Method | Route | Auth | Description |
 |---|---|---|---|
 | GET | `/books` | Public | List/search catalog (`?q=`, `?category=`), joined with inventory status |
-| GET | `/books/:id` | Public | Single title + stock status |
+| GET | `/books/:id` | Public | Single title + stock status. Includes `marketingContent` (the book's most recently generated Product D draft, `null` until staff generate one) |
 | POST | `/books` | Staff | Create title + its inventory row |
 | PATCH | `/books/:id` | Staff | Edit title fields |
 | GET | `/gifts` | Public | List/search gift catalog (`?q=` over name/description, `?category=`), paginated (`?page=`, `?limit=`). Stock is inline `quantityOnHand` (no inventory join) |
@@ -226,7 +244,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId \| giftId \| cardId, quantity }], customerId? }`. Amounts priced server-side from the referenced product's `priceCents` (book/gift/card); returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
 | GET | `/checkout/session?session_id=` | Public | Session status + linked `orderId` (once the webhook has written it), for the return page |
 | POST | `/webhooks/stripe` | Stripe (signed) | Payment webhook. Verifies the signature, and on `checkout.session.completed` (paid) writes the `Order` (`paid_online`), idempotent by `stripeSessionId`. This is where fulfillment happens, never the return page |
-| POST | `/marketing/generate` | Staff | Mediation layer to Product D (`apps/content-generator`, a vendored Python/FastAPI service -- not a Next.js/npm workspace app). Body: `{ bookIds: string[] }`. Fetches those books, aliases them into Product D's own JSON Schema catalog contract (`lib/marketing/catalog-mapper.ts` -- field renames + unit conversions only, e.g. `id`→`book_id`, `category`→`genre`, `priceCents / 100`→`price`; a field we have no data for, e.g. `rating` still unset, is omitted rather than fabricated), and forwards to Product D's `POST /generate`. Returns Product D's full result (`generated_drafts` + `rejected_records` + `validation_diagnostics`) unchanged, so staff see exactly what generated and what didn't and why -- Product D's own validator is the single source of truth for record completeness, not this layer. Requires `CONTENT_GENERATOR_URL` |
+| POST | `/marketing/generate` | Staff | Mediation layer to Product D (`apps/content-generator`, a vendored Python/FastAPI service -- not a Next.js/npm workspace app). Body: `{ bookIds: string[] }`. Fetches those books, aliases them into Product D's own JSON Schema catalog contract (`lib/marketing/catalog-mapper.ts` -- field renames + unit conversions only, e.g. `id`→`book_id`, `category`→`genre`, `priceCents / 100`→`price`; a field we have no data for, e.g. `rating` still unset, is omitted rather than fabricated), and forwards to Product D's `POST /generate`. Returns Product D's full result (`generated_drafts` + `rejected_records` + `validation_diagnostics`) unchanged, so staff see exactly what generated and what didn't and why -- Product D's own validator is the single source of truth for record completeness, not this layer. Persists each generated draft to `BookMarketingContent` (`lib/marketing/persist.ts`, upsert by book -- regenerating overwrites), which is how it reaches the public `GET /books/:id`. Requires `CONTENT_GENERATOR_URL` |
 
 **On the public-by-unguessable-UUID pattern** (`/orders/:id`, `/customers/:id`): this is an MVP tradeoff, not a real auth system. The technical spec defers real customer identity to a Supabase magic-link/OTP flow that hasn't been built. Anyone who has (or guesses) the UUID can read that order/customer record. Acceptable for now since these are hard-to-guess v4 UUIDs and the data isn't especially sensitive (no payment info), but revisit if/when real customer auth gets built.
 

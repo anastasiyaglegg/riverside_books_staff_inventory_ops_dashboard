@@ -4,12 +4,15 @@ import { requireStaffSession } from "@/lib/auth";
 import { generateMarketingContentSchema } from "@/lib/validation/marketing";
 import { mapBooksToMarketingCatalog } from "@/lib/marketing/catalog-mapper";
 import { generateMarketingContent, ContentGeneratorError } from "@/lib/marketing/client";
+import { persistGeneratedDrafts } from "@/lib/marketing/persist";
 
 // Staff-only mediation layer between our catalog and the vendored Product D
 // service (apps/content-generator): pulls the requested books, aliases them
 // into Product D's own JSON Schema contract, and forwards them to its
 // /generate endpoint untouched. See lib/marketing/catalog-mapper.ts for why
 // field translation -- not validity judgment -- is all this layer does.
+// Successful drafts are persisted (lib/marketing/persist.ts) so GET
+// /books/:id can surface them to the public storefront.
 export async function POST(request: Request) {
   const auth = await requireStaffSession(request);
   if (!auth.authorized) {
@@ -31,6 +34,7 @@ export async function POST(request: Request) {
 
   try {
     const result = await generateMarketingContent(catalog);
+    await persistGeneratedDrafts(result.generated_drafts);
     return ok(result);
   } catch (err) {
     if (err instanceof ContentGeneratorError) {

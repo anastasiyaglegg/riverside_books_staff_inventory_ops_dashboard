@@ -5,7 +5,10 @@ import { updateBookSchema } from "@/lib/validation/books";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const book = await prisma.book.findUnique({ where: { id }, include: { inventory: true } });
+  const book = await prisma.book.findUnique({
+    where: { id },
+    include: { inventory: true, marketingContent: true },
+  });
   if (!book) {
     return fail("Book not found", 404, "NOT_FOUND");
   }

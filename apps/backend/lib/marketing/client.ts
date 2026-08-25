@@ -1,12 +1,25 @@
 import type { MarketingCatalogRecord } from "@/lib/marketing/catalog-mapper";
 
+// Mirrors MarketingDraft.as_dict() in
+// apps/content-generator/src/riverside_marketing/generation/drafts.py.
+export type MarketingDraft = {
+  book_id: string;
+  content_type: string;
+  headline: string;
+  body_copy: string;
+  reason: string;
+  source_fields: string[];
+};
+
 // Mirrors CatalogGenerationResult.as_dict() in
 // apps/content-generator/src/riverside_marketing/orchestration.py -- passed
 // through to our caller as-is rather than reshaped, so staff see exactly
 // which records generated and which were rejected (and why), same as the
-// Python service's own callers do.
+// Python service's own callers do. rejected_records/validation_diagnostics
+// stay loosely typed (unknown) -- we only ever read generated_drafts to
+// persist; the rest is display-only for staff.
 export type MarketingGenerationResult = {
-  generated_drafts: unknown[];
+  generated_drafts: MarketingDraft[];
   rejected_records: unknown[];
   validation_diagnostics: unknown[];
   summary: {
