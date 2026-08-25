@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Customer Auth Architecture — Riverside Books</title>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "base", themeVariables: {
+        primaryColor: "#f7ecdf", primaryBorderColor: "#8a5a34", primaryTextColor: "#3c240f",
+        lineColor: "#8a5a34", fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+      }});
+    </script>
+    <style>
+      body { margin: 0; background: #fdf8f3; color: #3c240f;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+      h1 { color: #543219; }
+      h2 { margin-top: 2.5rem; color: #6b4226; border-bottom: 1px solid #ecd9be; padding-bottom: .4rem; }
+      p { line-height: 1.6; color: #543219; }
+      .card { background: #fff; border: 1px solid #ecd9be; border-radius: 16px;
+        padding: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow-x: auto; }
+      code { background: #f7ecdf; padding: .1rem .35rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Customer Auth Architecture</h1>
+      <p>Firebase Authentication for the Riverside Books customer app. Two React contexts,
+      joined by email: <strong>AuthContext</strong> owns the credential/session (Firebase);
+      <strong>CustomerContext</strong> owns the loyalty/order record (backend). They never
+      import each other — components that need both consume both hooks.</p>
+
+      <h2>Provider tree &amp; context wiring</h2>
+      <div class="card">
+        <pre class="mermaid">
+graph TD
+    subgraph Providers
+        BR[BrowserRouter]
+        AP[AuthProvider<br/>Firebase session]
+        CP[CustomerProvider<br/>loyalty / orders]
+        BR --> AP --> CP --> RT[AppRoutes]
+    end
+
+    FB[(Firebase Auth)] -. onAuthStateChanged .-> AP
+    API[(Backend /api/v1/customers)] -. identify / refresh .-> CP
+
+    AP -- useAuth --> AuthPage
+    AP -- useAuth --> NavBar
+    AP -- useAuth --> ProtectedRoute
+    AP -- useAuth --> Banner[EmailVerificationBanner]
+    AP -- useAuth --> AccountPage
+
+    CP -- useCustomer --> AuthPage
+    CP -- useCustomer --> NavBar
+    CP -- useCustomer --> AccountPage
+
+    ProtectedRoute -- gates --> AccountPage
+
+    classDef ctx fill:#f7ecdf,stroke:#8a5a34,color:#3c240f;
+    classDef ext fill:#e8eef7,stroke:#3a5a8a,color:#0f2440;
+    class AP,CP ctx;
+    class FB,API ext;
+        </pre>
+      </div>
+      <p><code>onAuthStateChanged</code> is the single source of truth: nothing sets
+      <code>user</code> by hand. Every login/logout/signup flows through Firebase's
+      listener, which updates AuthContext, which re-renders every consumer.</p>
+
+      <h2>Signup flow</h2>
+      <div class="card">
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant AuthPage
+    participant Auth as AuthContext
+    participant FB as Firebase
+    participant Cust as CustomerContext
+    participant API as Backend
+
+    U->>AuthPage: submit name + email + password
+    AuthPage->>AuthPage: validate match + zxcvbn score >= 2
+    AuthPage->>Auth: signUp(email, pw, keepSignedIn)
+    Auth->>FB: setPersistence() then createUser()
+    FB-->>Auth: user (emailVerified=false)
+    Auth->>FB: sendEmailVerification()
+    FB-->>Auth: user (fires onAuthStateChanged)
+    AuthPage->>Cust: identify({ name, email })
+    Cust->>API: POST /customers
+    API-->>Cust: Customer (persisted to localStorage)
+    AuthPage->>U: navigate /account (banner nudges verify)
+        </pre>
+      </div>
+
+      <h2>Login &amp; logout</h2>
+      <div class="card">
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant AuthPage
+    participant Auth as AuthContext
+    participant FB as Firebase
+    participant Cust as CustomerContext
+
+    Note over U,Cust: Same-device login
+    U->>AuthPage: submit email + password
+    AuthPage->>Auth: signIn(email, pw, keepSignedIn)
+    Auth->>FB: setPersistence() then signIn()
+    FB-->>Auth: onAuthStateChanged -> user set
+    Note over Cust: localStorage already rehydrated → loyalty shows
+    AuthPage->>U: navigate /account
+
+    Note over U,Cust: Logout
+    U->>Auth: signOut()  (Firebase session cleared)
+    U->>Cust: signOut()  (customer + localStorage cleared)
+    U->>AuthPage: navigate /login
+        </pre>
+      </div>
+
+      <h2>Route gating</h2>
+      <div class="card">
+        <pre class="mermaid">
+flowchart LR
+    R[/account request/] --> PR{ProtectedRoute<br/>useAuth}
+    PR -->|loading| S[Spinner]
+    PR -->|no user| L[Navigate to /login]
+    PR -->|user| A[AccountPage]
+    A --> C{customer in<br/>localStorage?}
+    C -->|yes| Acc[Loyalty + order history]
+    C -->|no, new device| Rec[Reconnect loyalty card<br/>identify by email]
+        </pre>
+      </div>
+
+      <h2>Known limitation: cross-device loyalty</h2>
+      <p>On a new device, Firebase login succeeds but there is no public endpoint to fetch
+      a Customer by email/uid (<code>GET /customers</code> is staff-only). So loyalty
+      history can't auto-restore — the <strong>Reconnect</strong> card re-links by email
+      instead. True cross-device restore needs a backend <code>firebaseUid</code> column +
+      an authenticated <code>GET /customers/me</code>, deferred for now.</p>
+    </div>
+  </body>
+</html>
