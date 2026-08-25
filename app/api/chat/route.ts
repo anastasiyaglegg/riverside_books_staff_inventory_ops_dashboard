@@ -31,6 +31,30 @@ interface ChatRequestBody {
   customer_email?: string | null;
 }
 
+// Origins allowed to embed the widget cross-origin (e.g. the real storefront
+// domain), comma-separated. Empty by default — same-origin requests (the demo
+// page) don't need CORS headers at all, so nothing changes until this is set.
+const ALLOWED_ORIGINS = (process.env.CHAT_WIDGET_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+function corsHeaders(origin: string | null): HeadersInit {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      Vary: "Origin",
+    };
+  }
+  return {};
+}
+
+export async function OPTIONS(request: Request): Promise<NextResponse> {
+  return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
+}
+
 function splitByType(items: CatalogItem[]) {
   return {
     books: items.filter((i) => i.product_type === "book"),
@@ -212,16 +236,18 @@ async function logChatTurn(params: {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const cors = corsHeaders(request.headers.get("origin"));
+
   let body: ChatRequestBody;
   try {
     body = (await request.json()) as ChatRequestBody;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: cors });
   }
 
   const message = body.message?.trim();
   if (!message) {
-    return NextResponse.json({ error: "message is required" }, { status: 400 });
+    return NextResponse.json({ error: "message is required" }, { status: 400, headers: cors });
   }
   const sessionId = body.session_id?.trim() || randomUUID();
   const history = Array.isArray(body.history) ? body.history : [];
@@ -229,11 +255,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const ip = getClientIp(request);
   if (!checkIpRateLimit(ip)) {
-    return NextResponse.json({ error: "Daily rate limit exceeded" }, { status: 429 });
+    return NextResponse.json({ error: "Daily rate limit exceeded" }, { status: 429, headers: cors });
   }
   const sessionOk = await checkSessionRateLimit(sessionId);
   if (!sessionOk) {
-    return NextResponse.json({ error: "Rate limit exceeded, slow down" }, { status: 429 });
+    return NextResponse.json({ error: "Rate limit exceeded, slow down" }, { status: 429, headers: cors });
   }
   recordIpRequest(ip);
 
@@ -285,5 +311,5 @@ export async function POST(request: Request): Promise<NextResponse> {
     session_id: sessionId,
   };
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, { headers: cors });
 }

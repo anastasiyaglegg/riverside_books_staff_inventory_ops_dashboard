@@ -73,6 +73,29 @@ The first version of Product C will focus on:
 5. Pre-order and pickup information
 6. Clear responses when information is unavailable or an error occurs
 
+## Embedding on another site
+
+`<ChatWidget />` is designed to drop into a host page. By default it assumes the
+host page is served from the same origin as this deployment (e.g. the demo page
+in `app/page.tsx`) and talks to a same-origin `/api/chat`.
+
+To embed it on a different origin (the real storefront), set two env vars on
+this deployment:
+
+- `NEXT_PUBLIC_CHAT_API_BASE_URL` — the full base URL this deployment's
+  `/api/chat` is reachable at (e.g. `https://chatbot.riversidebooks.example`).
+  The widget fetches `${NEXT_PUBLIC_CHAT_API_BASE_URL}/api/chat`. Leave unset
+  for same-origin use — it defaults to an empty string, which resolves to the
+  same relative `/api/chat` path as before.
+- `CHAT_WIDGET_ALLOWED_ORIGINS` — a comma-separated allowlist of host-page
+  origins permitted to call `/api/chat` cross-origin (e.g.
+  `https://www.riversidebooks.example`). `/api/chat` only sends
+  `Access-Control-Allow-Origin` for an origin on this list; it is empty by
+  default, so no cross-origin calls are permitted until explicitly configured.
+
+Both are additive and off by default — the demo page's same-origin behavior is
+unchanged unless these are set.
+
 ## Team Project
 
 This repository is part of a four-person collaborative build project in which each builder owns one primary product while collaborating on testing, integration, documentation, and shared system decisions across the complete Riverside Books product suite.
