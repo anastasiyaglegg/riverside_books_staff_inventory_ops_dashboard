@@ -196,6 +196,10 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | GET | `/books/:id` | Public | Single title + stock status |
 | POST | `/books` | Staff | Create title + its inventory row |
 | PATCH | `/books/:id` | Staff | Edit title fields |
+| GET | `/gifts` | Public | List/search gift catalog (`?q=` over name/description, `?category=`), paginated (`?page=`, `?limit=`). Stock is inline `quantityOnHand` (no inventory join) |
+| GET | `/gifts/:id` | Public | Single gift |
+| GET | `/cards` | Public | List/search card catalog (`?q=` over title/description, `?occasion=`), paginated (`?page=`, `?limit=`). Stock is inline `quantityOnHand` (no inventory join) |
+| GET | `/cards/:id` | Public | Single card |
 | GET | `/inventory` | Staff | Full inventory view, filterable by `?status=` |
 | PATCH | `/inventory/:bookId` | Staff | Adjust `quantityOnHand`; recompute `status` server-side via `deriveStockStatus()` |
 | GET | `/orders` | Staff, or Public with `?customerId=` | Without `customerId`: full staff listing, filterable by `?status=`. With `customerId`: that customer's own order history, no staff session needed |
