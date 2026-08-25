@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "test:unit": "vitest run",
+    "test:unit": "NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "test:integration": "echo 'No integration layer for this SPA (all data access goes through apps/backend, covered there) -- skipping' && exit 0",
     "test:e2e": "echo 'No E2E harness wired yet -- skipping until Playwright is set up' && exit 0"
   },
