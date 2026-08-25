@@ -80,7 +80,7 @@ export function MarketingContentPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Marketing Content</h1>
+        <h1>Generate for Storefront</h1>
         <button
           className="btn btn-primary"
           disabled={selectedIds.size === 0 || generating}
