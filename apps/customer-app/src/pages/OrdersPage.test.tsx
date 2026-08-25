@@ -25,7 +25,7 @@ function makeOrder(id: string, status: Order["status"], title: string): Order {
     totalCents: 1500,
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
-    items: [{ id: `it-${id}`, orderId: id, bookId: `b-${id}`, giftId: null, cardId: null, quantity: 1, unitPriceCents: 1500, book: { id: `b-${id}`, title, author: "A", isbn: null, priceCents: 1500, category: null, description: null, imageUrl: null, createdAt: "", updatedAt: "" } }],
+    items: [{ id: `it-${id}`, orderId: id, bookId: `b-${id}`, giftId: null, cardId: null, quantity: 1, unitPriceCents: 1500, book: { id: `b-${id}`, title, author: "A", isbn: null, priceCents: 1500, category: null, description: null, imageUrl: null, rating: null, createdAt: "", updatedAt: "" } }],
   };
 }
 

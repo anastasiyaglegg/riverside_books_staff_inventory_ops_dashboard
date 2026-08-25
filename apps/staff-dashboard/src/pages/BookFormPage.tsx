@@ -12,6 +12,7 @@ type FormState = {
   category: string;
   description: string;
   imageUrl: string;
+  rating: string;
   quantityOnHand: string;
   reorderThreshold: string;
 };
@@ -24,6 +25,7 @@ const EMPTY_FORM: FormState = {
   category: "",
   description: "",
   imageUrl: "",
+  rating: "",
   quantityOnHand: "0",
   reorderThreshold: "2",
 };
@@ -51,6 +53,7 @@ export function BookFormPage() {
           category: book.category ?? "",
           description: book.description ?? "",
           imageUrl: book.imageUrl ?? "",
+          rating: book.rating !== null ? String(book.rating) : "",
           quantityOnHand: String(book.inventory?.quantityOnHand ?? 0),
           reorderThreshold: String(book.inventory?.reorderThreshold ?? 2),
         });
@@ -79,6 +82,7 @@ export function BookFormPage() {
           category: form.category || null,
           description: form.description || null,
           imageUrl: form.imageUrl || null,
+          rating: form.rating === "" ? null : Number(form.rating),
         });
       } else {
         await api.post<Book>("/books", {
@@ -89,6 +93,7 @@ export function BookFormPage() {
           category: form.category || undefined,
           description: form.description || undefined,
           imageUrl: form.imageUrl || undefined,
+          rating: form.rating === "" ? undefined : Number(form.rating),
           quantityOnHand: Number(form.quantityOnHand),
           reorderThreshold: Number(form.reorderThreshold),
         });
@@ -162,6 +167,17 @@ export function BookFormPage() {
           id="imageUrl"
           value={form.imageUrl}
           onChange={(e) => set("imageUrl", e.target.value)}
+        />
+
+        <label htmlFor="rating">Rating (0-5, optional)</label>
+        <input
+          id="rating"
+          type="number"
+          min={0}
+          max={5}
+          step="0.1"
+          value={form.rating}
+          onChange={(e) => set("rating", e.target.value)}
         />
 
         {!isEdit && (

@@ -29,6 +29,8 @@ export type Book = {
   category: string | null;
   description: string | null;
   imageUrl: string | null;
+  // Staff-entered average rating, 0-5. Null until a staff member sets one.
+  rating: number | null;
   createdAt: string;
   updatedAt: string;
   inventory?: Inventory | null;

@@ -13,6 +13,7 @@ const BOOK: Book = {
   category: null,
   description: null,
   imageUrl: null,
+  rating: null,
   createdAt: "",
   updatedAt: "",
 };

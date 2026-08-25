@@ -34,6 +34,10 @@ export type Book = {
   category: string | null;
   description: string | null;
   imageUrl: string | null;
+  // Staff-entered average rating, 0-5. Null until set -- feeds Product D's
+  // marketing content generator, which skips a book while this is null
+  // rather than invent one (see apps/backend/lib/marketing/catalog-mapper.ts).
+  rating: number | null;
   createdAt: string;
   updatedAt: string;
   inventory?: Inventory | null;
