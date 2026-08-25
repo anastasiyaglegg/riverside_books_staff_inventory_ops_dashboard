@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   const resolved = await resolveCart(items);
   if (!resolved) {
-    return fail("One or more books in your cart were not found", 400, "INVALID_ITEMS");
+    return fail("One or more items in your cart were not found", 400, "INVALID_ITEMS");
   }
 
   // A signed-in customer checks out "as themselves": prefill Stripe's email field from
