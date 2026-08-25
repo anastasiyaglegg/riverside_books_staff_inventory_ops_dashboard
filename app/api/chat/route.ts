@@ -15,6 +15,7 @@ import { getGroundedReply, type ChatTurn } from "@/lib/claude";
 import { validateAndFinalize } from "@/lib/validate";
 import { checkSessionRateLimit, checkIpRateLimit, recordIpRequest } from "@/lib/rate-limit";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { corsHeaders, corsPreflight } from "@/lib/cors";
 import type {
   CatalogItem,
   ChatApiResponse,
@@ -31,28 +32,8 @@ interface ChatRequestBody {
   customer_email?: string | null;
 }
 
-// Origins allowed to embed the widget cross-origin (e.g. the real storefront
-// domain), comma-separated. Empty by default — same-origin requests (the demo
-// page) don't need CORS headers at all, so nothing changes until this is set.
-const ALLOWED_ORIGINS = (process.env.CHAT_WIDGET_ALLOWED_ORIGINS ?? "")
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
-
-function corsHeaders(origin: string | null): HeadersInit {
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    return {
-      "Access-Control-Allow-Origin": origin,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      Vary: "Origin",
-    };
-  }
-  return {};
-}
-
 export async function OPTIONS(request: Request): Promise<NextResponse> {
-  return new NextResponse(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
+  return corsPreflight(request);
 }
 
 function splitByType(items: CatalogItem[]) {

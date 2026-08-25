@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CatalogItem } from "@/lib/types";
 import { stockBand, stockBandLabel } from "@/lib/types";
+import { CHAT_API_BASE } from "@/lib/chat-api-base";
 import SamplePanel from "./SamplePanel";
 
 interface ProductCardProps {
@@ -28,7 +29,7 @@ async function recordSampleEvent(
   action: "opened" | "reserve_clicked" | "dismissed"
 ) {
   try {
-    await fetch("/api/sample/event", {
+    await fetch(`${CHAT_API_BASE}/api/sample/event`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, book_id: bookId, action }),

@@ -77,24 +77,51 @@ The first version of Product C will focus on:
 
 `<ChatWidget />` is designed to drop into a host page. By default it assumes the
 host page is served from the same origin as this deployment (e.g. the demo page
-in `app/page.tsx`) and talks to a same-origin `/api/chat`.
+in `app/page.tsx`) and talks to same-origin API routes.
 
 To embed it on a different origin (the real storefront), set two env vars on
 this deployment:
 
-- `NEXT_PUBLIC_CHAT_API_BASE_URL` — the full base URL this deployment's
-  `/api/chat` is reachable at (e.g. `https://chatbot.riversidebooks.example`).
-  The widget fetches `${NEXT_PUBLIC_CHAT_API_BASE_URL}/api/chat`. Leave unset
-  for same-origin use — it defaults to an empty string, which resolves to the
-  same relative `/api/chat` path as before.
+- `NEXT_PUBLIC_CHAT_API_BASE_URL` — the full base URL this deployment's API is
+  reachable at (e.g. `https://chatbot.riversidebooks.example`). Every fetch the
+  widget's components make (`/api/chat`, `/api/sample/[book_id]`,
+  `/api/sample/event`, `/api/store-info`) is prefixed with this base — see
+  `lib/chat-api-base.ts`. Leave unset for same-origin use — it defaults to an
+  empty string, which resolves to the same relative paths as before.
 - `CHAT_WIDGET_ALLOWED_ORIGINS` — a comma-separated allowlist of host-page
-  origins permitted to call `/api/chat` cross-origin (e.g.
-  `https://www.riversidebooks.example`). `/api/chat` only sends
-  `Access-Control-Allow-Origin` for an origin on this list; it is empty by
-  default, so no cross-origin calls are permitted until explicitly configured.
+  origins permitted to call those routes cross-origin (e.g.
+  `https://www.riversidebooks.example`). Each route only sends
+  `Access-Control-Allow-Origin` for an origin on this list — see
+  `lib/cors.ts`, shared by all four routes so the allowlist can't drift between
+  them. Empty by default, so no cross-origin calls are permitted until
+  explicitly configured.
 
 Both are additive and off by default — the demo page's same-origin behavior is
 unchanged unless these are set.
+
+### For a team embedding this on a different codebase/repo
+
+`<ChatWidget />` is a React component, not a `<script>`-tag embed — the host
+page needs to be able to render it directly:
+
+1. Copy these files into the host app: `components/ChatWidget.tsx`,
+   `components/MessageList.tsx`, `components/ProductCard.tsx`,
+   `components/SamplePanel.tsx`, `components/HandoffCard.tsx`,
+   `lib/chat-api-base.ts`, and the types they import from `lib/types.ts`
+   (`ChatApiResponse`, `CatalogItem`, `StoreInfoRow`, `BookSample`,
+   `SamplePreviewAction`, `stockBand`, `stockBandLabel`).
+2. Copy the `.rb-*` CSS rules from `app/globals.css` into the host app's
+   stylesheet (skip `body`/`.demo-page`, which are specific to this repo's demo
+   page).
+3. Render `<ChatWidget />` somewhere in the host app's layout.
+4. On the host app's deployment, set `NEXT_PUBLIC_CHAT_API_BASE_URL` to this
+   chatbot's production URL.
+5. On **this** deployment, add the host app's real origin to
+   `CHAT_WIDGET_ALLOWED_ORIGINS` — without this step the widget will render but
+   every API call will be blocked by the browser's CORS check.
+6. Verify: open the host page, send a message, and open a sample panel. If
+   anything is blocked, the browser console will show a CORS error naming the
+   exact origin that needs adding to `CHAT_WIDGET_ALLOWED_ORIGINS`.
 
 ## Team Project
 

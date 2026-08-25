@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { corsHeaders, corsPreflight } from "@/lib/cors";
 import type { SamplePreviewAction } from "@/lib/types";
 
 const VALID_ACTIONS: SamplePreviewAction[] = [
@@ -16,21 +17,27 @@ interface Body {
   action?: string;
 }
 
+export async function OPTIONS(request: Request): Promise<NextResponse> {
+  return corsPreflight(request);
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
+  const cors = corsHeaders(request.headers.get("origin"));
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: cors });
   }
 
   if (!body.session_id || typeof body.session_id !== "string") {
-    return NextResponse.json({ error: "session_id is required" }, { status: 400 });
+    return NextResponse.json({ error: "session_id is required" }, { status: 400, headers: cors });
   }
   if (!body.action || !VALID_ACTIONS.includes(body.action as SamplePreviewAction)) {
     return NextResponse.json(
       { error: `action must be one of ${VALID_ACTIONS.join(", ")}` },
-      { status: 400 }
+      { status: 400, headers: cors }
     );
   }
 
@@ -42,7 +49,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
   if (error) {
     console.error("Failed to write sample_preview_events row:", error);
-    return NextResponse.json({ error: "failed to record event" }, { status: 500 });
+    return NextResponse.json({ error: "failed to record event" }, { status: 500, headers: cors });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: cors });
 }

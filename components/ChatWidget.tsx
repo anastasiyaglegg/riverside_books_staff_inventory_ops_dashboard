@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import MessageList, { type ChatMessage } from "./MessageList";
 import type { ChatApiResponse } from "@/lib/types";
+import { CHAT_API_BASE } from "@/lib/chat-api-base";
 
 // Taken from the seeded chat_logs rows (see reference dataset) — real
 // questions this store's customers actually asked.
@@ -17,12 +18,6 @@ function makeSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
-
-// The API route the widget talks to. Empty string resolves to a same-origin
-// "/api/chat", identical to today's behavior. Set NEXT_PUBLIC_CHAT_API_BASE_URL
-// when this bundle is embedded on a host page served from a different origin
-// than the one hosting /api/chat (see README "Embedding on another site").
-const CHAT_API_BASE = process.env.NEXT_PUBLIC_CHAT_API_BASE_URL || "";
 
 // Simplified badge version of the storefront logo — moon, string lights, and
 // a book-and-mug stack in the brand navy/blush/gold palette — used in place
