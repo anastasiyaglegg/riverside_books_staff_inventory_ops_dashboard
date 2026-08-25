@@ -221,4 +221,69 @@ describe("POST /api/v1/orders", () => {
     const response = await POST(request);
     expect(response.status).toBe(400);
   });
+
+  it("decrements stock across books, gifts, and cards when the order is placed", async () => {
+    const book = await prisma.book.create({
+      data: {
+        title: "Stock Book",
+        author: "A. Author",
+        priceCents: 1500,
+        inventory: { create: { quantityOnHand: 5, reorderThreshold: 2, status: "in_stock" } },
+      },
+    });
+    const gift = await prisma.gift.create({
+      data: { name: "Enamel Mug", priceCents: 1200, quantityOnHand: 10 },
+    });
+    const card = await prisma.card.create({
+      data: { title: "Birthday Card", priceCents: 500, quantityOnHand: 8 },
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [
+            { bookId: book.id, quantity: 2 },
+            { giftId: gift.id, quantity: 3 },
+            { cardId: card.id, quantity: 1 },
+          ],
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+
+    const inventory = await prisma.inventory.findUnique({ where: { bookId: book.id } });
+    expect(inventory?.quantityOnHand).toBe(3); // 5 - 2
+    expect(inventory?.status).toBe("in_stock");
+    expect((await prisma.gift.findUnique({ where: { id: gift.id } }))?.quantityOnHand).toBe(7); // 10 - 3
+    expect((await prisma.card.findUnique({ where: { id: card.id } }))?.quantityOnHand).toBe(7); // 8 - 1
+  });
+
+  it("recomputes book stock status to low/out when a sale crosses the threshold", async () => {
+    const book = await prisma.book.create({
+      data: {
+        title: "Almost Gone",
+        author: "A. Author",
+        priceCents: 1000,
+        inventory: { create: { quantityOnHand: 3, reorderThreshold: 2, status: "in_stock" } },
+      },
+    });
+
+    await POST(
+      new Request("http://localhost/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          customerName: "Jane Doe",
+          customerEmail: "jane@example.com",
+          items: [{ bookId: book.id, quantity: 3 }],
+        }),
+      }),
+    );
+
+    const inventory = await prisma.inventory.findUnique({ where: { bookId: book.id } });
+    expect(inventory?.quantityOnHand).toBe(0);
+    expect(inventory?.status).toBe("out_of_stock");
+  });
 });

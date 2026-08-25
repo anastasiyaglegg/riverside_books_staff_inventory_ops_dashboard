@@ -3,6 +3,7 @@ import { ok, fail, failValidation } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { findOrCreateCustomer } from "@/lib/customers";
 import { resolveCart } from "@/lib/checkout";
+import { decrementStockForOrderItems } from "@/lib/fulfillment";
 import { listOrdersQuerySchema, createOrderSchema } from "@/lib/validation/orders";
 
 // Every order line points at one of three product catalogs -- pull all three so the
@@ -60,15 +61,21 @@ export async function POST(request: Request) {
     phone: customerPhone,
   });
 
-  const order = await prisma.order.create({
-    data: {
-      customerId: customer.id,
-      status: "placed",
-      paymentStatus: "unpaid",
-      totalCents: resolved.totalCents,
-      items: { create: resolved.orderItems },
-    },
-    include: { customer: true, items: { include: ORDER_ITEM_INCLUDE } },
+  // Placing the order and reserving its stock must be atomic: if the decrement fails,
+  // we don't want an order that never reduced inventory (or vice versa).
+  const order = await prisma.$transaction(async (tx) => {
+    const created = await tx.order.create({
+      data: {
+        customerId: customer.id,
+        status: "placed",
+        paymentStatus: "unpaid",
+        totalCents: resolved.totalCents,
+        items: { create: resolved.orderItems },
+      },
+      include: { customer: true, items: { include: ORDER_ITEM_INCLUDE } },
+    });
+    await decrementStockForOrderItems(tx, resolved.orderItems);
+    return created;
   });
 
   return ok(order, 201);

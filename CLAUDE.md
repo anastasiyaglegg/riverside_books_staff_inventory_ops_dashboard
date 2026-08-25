@@ -198,14 +198,18 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | PATCH | `/books/:id` | Staff | Edit title fields |
 | GET | `/gifts` | Public | List/search gift catalog (`?q=` over name/description, `?category=`), paginated (`?page=`, `?limit=`). Stock is inline `quantityOnHand` (no inventory join) |
 | GET | `/gifts/:id` | Public | Single gift |
+| PATCH | `/gifts/:id` | Staff | Edit gift fields / restock via `quantityOnHand` (partial update) |
 | GET | `/cards` | Public | List/search card catalog (`?q=` over title/description, `?occasion=`), paginated (`?page=`, `?limit=`). Stock is inline `quantityOnHand` (no inventory join) |
 | GET | `/cards/:id` | Public | Single card |
+| PATCH | `/cards/:id` | Staff | Edit card fields / restock via `quantityOnHand` (partial update) |
 | GET | `/inventory` | Staff | Full inventory view, filterable by `?status=` |
 | PATCH | `/inventory/:bookId` | Staff | Adjust `quantityOnHand`; recompute `status` server-side via `deriveStockStatus()` |
 | GET | `/orders` | Staff, or Public with `?customerId=` | Without `customerId`: full staff listing, filterable by `?status=`. With `customerId`: that customer's own order history, no staff session needed |
-| POST | `/orders` | Public | Create a pre-order (Product A). Body: `{ customerName, customerEmail? or customerPhone?, items: [{ bookId \| giftId \| cardId, quantity }] }` -- each line references exactly one product from any of the three catalogs (books/gifts/cards). Finds-or-creates the customer by email/phone -- no prior signup required |
+| POST | `/orders` | Public | Create a pre-order (Product A). Body: `{ customerName, customerEmail? or customerPhone?, items: [{ bookId \| giftId \| cardId, quantity }] }` -- each line references exactly one product from any of the three catalogs (books/gifts/cards). Finds-or-creates the customer by email/phone -- no prior signup required. **Decrements the referenced products' stock in the same transaction (stock is reservable -- see Fulfillment rules).** |
 | GET | `/orders/:id` | Public | Single order detail. Was staff-only; opened up so Product A can poll its own order without a customer-auth system (none exists yet) -- same "unguessable UUID" pattern as `/books/:id` |
-| PATCH | `/orders/:id/status` | Staff | Transition order status; reject invalid transitions |
+| PATCH | `/orders/:id/status` | Staff | Transition order status; reject invalid transitions. **On `completed`: customer earns one loyalty stamp. On `cancelled`: reserved stock is restored.** |
+
+**Fulfillment rules (stock + loyalty).** Stock is *reservable*: `POST /orders` and the paid Stripe webhook (`fulfillCheckout`) both decrement the referenced products' stock in the same transaction that writes the order (books via their `Inventory` row with `status` recomputed by `deriveStockStatus()`; gifts/cards via inline `quantityOnHand`). Cancelling an order (`PATCH /orders/:id/status` → `cancelled`) restores that stock. Decrements/restores are exact (not clamped) so they cancel out. Loyalty: completing an order (`→ completed`, a terminal state) earns the linked customer one stamp via `applyEarn()` and writes a `LoyaltyTransaction`. The shared helpers live in `lib/fulfillment.ts`; the manual staff `POST /loyalty/earn` still exists for in-store cash sales. See `lib/fulfillment.ts`.
 | GET | `/customers` | Staff | Search customers (`?q=` matches name/email/phone) -- added post-hoc for story B9 (Loyalty Lookup), not in the original table |
 | POST | `/customers` | Public | Create a customer profile (Product A signup). `409` on duplicate email/phone |
 | GET | `/customers/:id` | Public | Customer profile incl. loyalty count. Was staff-only; same unguessable-UUID reasoning as `/orders/:id` |

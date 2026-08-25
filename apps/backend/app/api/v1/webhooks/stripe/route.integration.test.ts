@@ -143,6 +143,40 @@ describe("POST /api/v1/webhooks/stripe", () => {
     expect(customer?.lastName).toBe("Buyer");
   });
 
+  it("decrements stock for the paid items", async () => {
+    const book = await prisma.book.create({
+      data: {
+        title: "Paid Book",
+        author: "Tester",
+        priceCents: 1500,
+        inventory: { create: { quantityOnHand: 6, reorderThreshold: 2, status: "in_stock" } },
+      },
+    });
+    const gift = await prisma.gift.create({
+      data: { name: "Enamel Mug", priceCents: 1200, quantityOnHand: 9 },
+    });
+    constructEvent.mockReturnValue(
+      completedEvent({
+        id: "cs_paid_stock",
+        payment_status: "paid",
+        customer_details: { email: "guest@example.com", name: "Guest Buyer" },
+        metadata: {
+          items: JSON.stringify([
+            { bookId: book.id, quantity: 2 },
+            { giftId: gift.id, quantity: 4 },
+          ]),
+          customerId: "",
+        },
+      }),
+    );
+
+    await POST(webhookRequest());
+
+    const inventory = await prisma.inventory.findUnique({ where: { bookId: book.id } });
+    expect(inventory?.quantityOnHand).toBe(4); // 6 - 2
+    expect((await prisma.gift.findUnique({ where: { id: gift.id } }))?.quantityOnHand).toBe(5); // 9 - 4
+  });
+
   it("does not fulfill an unpaid session", async () => {
     constructEvent.mockReturnValue(
       completedEvent({ id: "cs_unpaid", payment_status: "unpaid", metadata: { items: "[]" } }),
