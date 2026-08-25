@@ -29,8 +29,28 @@ model Book {
   updatedAt   DateTime    @updatedAt @map("updated_at")
   inventory   Inventory?
   orderItems  OrderItem[]
+  marketingContent BookMarketingContent?
 
   @@map("books")
+}
+
+// The most recently generated Product D marketing draft for a book -- one row per book
+// (regenerating overwrites it), populated by POST /marketing/generate and read publicly
+// via GET /books/:id so the customer app can display it. Mirrors
+// riverside_marketing.generation.drafts.MarketingDraft.as_dict() in apps/content-generator.
+model BookMarketingContent {
+  id           String   @id @default(uuid())
+  bookId       String   @unique @map("book_id")
+  book         Book     @relation(fields: [bookId], references: [id])
+  contentType  String   @map("content_type")
+  headline     String
+  bodyCopy     String   @map("body_copy")
+  reason       String
+  sourceFields String[] @map("source_fields")
+  generatedAt  DateTime @default(now()) @map("generated_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("book_marketing_content")
 }
 
 model Inventory {
