@@ -52,6 +52,7 @@ model Book {
   category    String?
   description String?
   imageUrl    String?
+  rating      Float?   // staff-entered average, 0-5; null until set, never fabricated
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   inventory   Inventory?
@@ -225,6 +226,7 @@ This started as a backend+staff-dashboard-only table (Product A's own endpoints 
 | POST | `/checkout/session` | Public | Create an embedded Stripe Checkout Session for a cart. Body: `{ items: [{ bookId \| giftId \| cardId, quantity }], customerId? }`. Amounts priced server-side from the referenced product's `priceCents` (book/gift/card); returns `{ clientSecret }`. Does NOT create the order -- the webhook does |
 | GET | `/checkout/session?session_id=` | Public | Session status + linked `orderId` (once the webhook has written it), for the return page |
 | POST | `/webhooks/stripe` | Stripe (signed) | Payment webhook. Verifies the signature, and on `checkout.session.completed` (paid) writes the `Order` (`paid_online`), idempotent by `stripeSessionId`. This is where fulfillment happens, never the return page |
+| POST | `/marketing/generate` | Staff | Mediation layer to Product D (`apps/content-generator`, a vendored Python/FastAPI service -- not a Next.js/npm workspace app). Body: `{ bookIds: string[] }`. Fetches those books, aliases them into Product D's own JSON Schema catalog contract (`lib/marketing/catalog-mapper.ts` -- field renames + unit conversions only, e.g. `id`→`book_id`, `category`→`genre`, `priceCents / 100`→`price`; a field we have no data for, e.g. `rating` still unset, is omitted rather than fabricated), and forwards to Product D's `POST /generate`. Returns Product D's full result (`generated_drafts` + `rejected_records` + `validation_diagnostics`) unchanged, so staff see exactly what generated and what didn't and why -- Product D's own validator is the single source of truth for record completeness, not this layer. Requires `CONTENT_GENERATOR_URL` |
 
 **On the public-by-unguessable-UUID pattern** (`/orders/:id`, `/customers/:id`): this is an MVP tradeoff, not a real auth system. The technical spec defers real customer identity to a Supabase magic-link/OTP flow that hasn't been built. Anyone who has (or guesses) the UUID can read that order/customer record. Acceptable for now since these are hard-to-guess v4 UUIDs and the data isn't especially sensitive (no payment info), but revisit if/when real customer auth gets built.
 
