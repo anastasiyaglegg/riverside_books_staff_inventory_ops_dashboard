@@ -35,3 +35,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const card = await prisma.card.update({ where: { id }, data: parsed.data });
   return ok(card);
 }
+
+// Refuses to delete a card with order history -- OrderItem rows carry no cascade and
+// must never be silently orphaned/corrupted.
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaffSession(request);
+  if (!auth.authorized) {
+    return fail("Unauthorized", 401, "UNAUTHORIZED");
+  }
+
+  const { id } = await params;
+  const existing = await prisma.card.findUnique({ where: { id } });
+  if (!existing) {
+    return fail("Card not found", 404, "NOT_FOUND");
+  }
+
+  const orderItemCount = await prisma.orderItem.count({ where: { cardId: id } });
+  if (orderItemCount > 0) {
+    return fail("Cannot delete a card referenced by existing orders", 409, "REFERENCED_BY_ORDERS");
+  }
+
+  await prisma.card.delete({ where: { id } });
+  return ok({ id });
+}

@@ -35,3 +35,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const gift = await prisma.gift.update({ where: { id }, data: parsed.data });
   return ok(gift);
 }
+
+// Refuses to delete a gift with order history -- OrderItem rows carry no cascade and
+// must never be silently orphaned/corrupted.
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaffSession(request);
+  if (!auth.authorized) {
+    return fail("Unauthorized", 401, "UNAUTHORIZED");
+  }
+
+  const { id } = await params;
+  const existing = await prisma.gift.findUnique({ where: { id } });
+  if (!existing) {
+    return fail("Gift not found", 404, "NOT_FOUND");
+  }
+
+  const orderItemCount = await prisma.orderItem.count({ where: { giftId: id } });
+  if (orderItemCount > 0) {
+    return fail("Cannot delete a gift referenced by existing orders", 409, "REFERENCED_BY_ORDERS");
+  }
+
+  await prisma.gift.delete({ where: { id } });
+  return ok({ id });
+}
