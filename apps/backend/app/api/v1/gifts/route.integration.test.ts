@@ -1,11 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-import { GET } from "./route";
+vi.mock("@/lib/auth", () => ({ requireStaffSession: vi.fn() }));
+
+import { requireStaffSession } from "@/lib/auth";
+import { GET, POST } from "./route";
 import { prisma } from "@/lib/prisma";
 import { resetDb } from "@/test/db-helpers";
 
 beforeEach(async () => {
   await resetDb();
+  vi.mocked(requireStaffSession).mockResolvedValue({
+    authorized: true,
+    user: { id: "staff-1", name: "Staff One", role: "owner" },
+  });
 });
 
 describe("GET /api/v1/gifts", () => {
@@ -87,5 +94,48 @@ describe("GET /api/v1/gifts", () => {
   it("returns 400 for an out-of-range limit", async () => {
     const response = await GET(new Request("http://localhost/api/v1/gifts?limit=101"));
     expect(response.status).toBe(400);
+  });
+});
+
+describe("POST /api/v1/gifts", () => {
+  it("creates a gift", async () => {
+    const request = new Request("http://localhost/api/v1/gifts", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Reading Light",
+        priceCents: 1295,
+        category: "accessory",
+        quantityOnHand: 12,
+      }),
+    });
+
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.data.name).toBe("Reading Light");
+    expect(body.data.quantityOnHand).toBe(12);
+  });
+
+  it("returns 400 when required fields are missing", async () => {
+    const request = new Request("http://localhost/api/v1/gifts", {
+      method: "POST",
+      body: JSON.stringify({ category: "mug" }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 401 when not authenticated as staff", async () => {
+    vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
+
+    const request = new Request("http://localhost/api/v1/gifts", {
+      method: "POST",
+      body: JSON.stringify({ name: "X", priceCents: 100 }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(401);
   });
 });

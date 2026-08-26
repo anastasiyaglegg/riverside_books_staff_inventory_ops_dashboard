@@ -1,11 +1,18 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-import { GET } from "./route";
+vi.mock("@/lib/auth", () => ({ requireStaffSession: vi.fn() }));
+
+import { requireStaffSession } from "@/lib/auth";
+import { GET, POST } from "./route";
 import { prisma } from "@/lib/prisma";
 import { resetDb } from "@/test/db-helpers";
 
 beforeEach(async () => {
   await resetDb();
+  vi.mocked(requireStaffSession).mockResolvedValue({
+    authorized: true,
+    user: { id: "staff-1", name: "Staff One", role: "owner" },
+  });
 });
 
 describe("GET /api/v1/cards", () => {
@@ -94,5 +101,48 @@ describe("GET /api/v1/cards", () => {
   it("returns 400 for an out-of-range limit", async () => {
     const response = await GET(new Request("http://localhost/api/v1/cards?limit=101"));
     expect(response.status).toBe(400);
+  });
+});
+
+describe("POST /api/v1/cards", () => {
+  it("creates a card", async () => {
+    const request = new Request("http://localhost/api/v1/cards", {
+      method: "POST",
+      body: JSON.stringify({
+        title: "Happy Anniversary",
+        priceCents: 495,
+        occasion: "anniversary",
+        quantityOnHand: 10,
+      }),
+    });
+
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.data.title).toBe("Happy Anniversary");
+    expect(body.data.quantityOnHand).toBe(10);
+  });
+
+  it("returns 400 when required fields are missing", async () => {
+    const request = new Request("http://localhost/api/v1/cards", {
+      method: "POST",
+      body: JSON.stringify({ occasion: "birthday" }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 401 when not authenticated as staff", async () => {
+    vi.mocked(requireStaffSession).mockResolvedValueOnce({ authorized: false });
+
+    const request = new Request("http://localhost/api/v1/cards", {
+      method: "POST",
+      body: JSON.stringify({ title: "X", priceCents: 100 }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(401);
   });
 });
