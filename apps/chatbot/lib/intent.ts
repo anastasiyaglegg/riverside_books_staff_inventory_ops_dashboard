@@ -18,6 +18,12 @@ const HANDOFF_RE =
 // Bright City"). Require actual hours-question phrasing instead.
 const HOURS_RE =
   /\b(what time (do|does|are)|when (do|does) (you|the store)|store hours|opening hours|business hours|hours (today|tomorrow|on \w+day)|are you open|open(?:ing)? (today|tomorrow|on \w+day|right now)|clos(?:e|ed|ing) (today|tomorrow|on \w+day)|what are your hours)\b/i;
+// Anchored to the WHOLE message, not a substring — a bare "hours?" or "open?"
+// is unambiguous with nothing else in the query, unlike HOURS_RE which must
+// stay phrase-based to avoid matching "hours" inside book titles/descriptions
+// (e.g. "Small Hours, Bright City"). Full-message anchoring can't collide with
+// those since no catalog title is literally just "hours"/"open"/"closed".
+const HOURS_BARE_RE = /^(store |shop )?(hours?|open(?:ing)?|clos(?:e|ed|ing))[?.!]*$/i;
 const POLICY_RE = /\b(return|refund|exchange|policy|preorder|pre-order|hold)\b/i;
 const EVENTS_RE = /\b(event|events|reading|signing|workshop|book club|author visit)\b/i;
 const LOYALTY_RE = /\b(loyalty|stamps?|rewards? program)\b/i;
@@ -63,7 +69,7 @@ export function classifyIntentByKeyword(message: string): IntentClassification {
   if (HANDOFF_RE.test(message)) return { ...base, intent: "handoff" };
   if (SAMPLE_RE.test(message)) return { ...base, intent: "sample_request" };
   if (LOYALTY_RE.test(message)) return { ...base, intent: "loyalty_faq" };
-  if (HOURS_RE.test(message)) return { ...base, intent: "hours" };
+  if (HOURS_RE.test(message) || HOURS_BARE_RE.test(message.trim())) return { ...base, intent: "hours" };
   if (POLICY_RE.test(message)) return { ...base, intent: "policy" };
   if (EVENTS_RE.test(message)) return { ...base, intent: "events" };
   if (isRecommendationQuery) return { ...base, intent: "product_browse" };
