@@ -4,7 +4,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { NavBar } from "@/components/NavBar";
 import { LoginPage } from "@/pages/LoginPage";
 import { InventoryPage } from "@/pages/InventoryPage";
-import { MerchandisePage } from "@/pages/MerchandisePage";
+import { CardsInventoryPage } from "@/pages/CardsInventoryPage";
+import { GiftsInventoryPage } from "@/pages/GiftsInventoryPage";
 import { MarketingEmbedPage } from "@/pages/MarketingEmbedPage";
 import { MarketingContentPage } from "@/pages/MarketingContentPage";
 import { BookFormPage } from "@/pages/BookFormPage";
@@ -71,10 +72,18 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/merchandise"
+        path="/inventory/cards"
         element={
           <AuthedLayout>
-            <MerchandisePage />
+            <CardsInventoryPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
+        path="/inventory/gifts"
+        element={
+          <AuthedLayout>
+            <GiftsInventoryPage />
           </AuthedLayout>
         }
       />

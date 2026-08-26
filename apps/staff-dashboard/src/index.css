@@ -72,6 +72,32 @@ body {
   color: var(--color-muted);
 }
 
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+.tab-link {
+  padding: 8px 12px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tab-link.active,
+.tab-link:hover {
+  color: var(--color-text);
+}
+
+.tab-link.active {
+  border-bottom-color: var(--color-primary);
+}
+
 .btn {
   border: 1px solid var(--color-border);
   background: var(--color-surface);

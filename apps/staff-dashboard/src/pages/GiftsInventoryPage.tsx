@@ -1,45 +1,12 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
+import { InventoryTabs } from "@/components/InventoryTabs";
 import { formatCents } from "@/lib/money";
-import type { Card, Gift } from "@/types";
+import type { Gift } from "@/types";
 
-// Gifts and cards both track stock inline via quantityOnHand (no Inventory row like books),
-// so this normalizes the two catalogs into one row shape and one editable table. Kind
-// decides which endpoint a save PATCHes.
-type MerchItem = {
-  kind: "gift" | "card";
-  id: string;
-  name: string;
-  group: string | null; // gift.category | card.occasion
-  priceCents: number;
-  quantityOnHand: number;
-};
-
-function giftToMerch(gift: Gift): MerchItem {
-  return {
-    kind: "gift",
-    id: gift.id,
-    name: gift.name,
-    group: gift.category,
-    priceCents: gift.priceCents,
-    quantityOnHand: gift.quantityOnHand,
-  };
-}
-
-function cardToMerch(card: Card): MerchItem {
-  return {
-    kind: "card",
-    id: card.id,
-    name: card.title,
-    group: card.occasion,
-    priceCents: card.priceCents,
-    quantityOnHand: card.quantityOnHand,
-  };
-}
-
-export function MerchandisePage() {
-  const [items, setItems] = useState<MerchItem[]>([]);
+export function GiftsInventoryPage() {
+  const [items, setItems] = useState<Gift[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsReorderOnly, setNeedsReorderOnly] = useState(false);
@@ -52,19 +19,10 @@ export function MerchandisePage() {
     setLoading(true);
     setError(null);
     try {
-      const [gifts, cards] = await Promise.all([
-        api.get<Gift[]>("/gifts"),
-        api.get<Card[]>("/cards"),
-      ]);
-      const merged = [
-        ...gifts.map(giftToMerch),
-        ...cards.map(cardToMerch),
-      ].sort((a, b) => a.name.localeCompare(b.name));
-      setItems(merged);
+      const gifts = await api.get<Gift[]>("/gifts");
+      setItems([...gifts].sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Failed to load merchandise",
-      );
+      setError(err instanceof ApiError ? err.message : "Failed to load gifts");
     } finally {
       setLoading(false);
     }
@@ -74,7 +32,7 @@ export function MerchandisePage() {
     void load();
   }, []);
 
-  async function saveQuantity(item: MerchItem) {
+  async function saveQuantity(item: Gift) {
     const raw = pendingQuantities[item.id];
     if (raw === undefined) return;
     const quantityOnHand = Number(raw);
@@ -85,18 +43,14 @@ export function MerchandisePage() {
     setSavingId(item.id);
     setError(null);
     try {
-      const path =
-        item.kind === "gift" ? `/gifts/${item.id}` : `/cards/${item.id}`;
-      const updated = await api.patch<Gift | Card>(path, { quantityOnHand });
-      const next =
-        item.kind === "gift"
-          ? giftToMerch(updated as Gift)
-          : cardToMerch(updated as Card);
-      setItems((prev) => prev.map((i) => (i.id === item.id ? next : i)));
+      const updated = await api.patch<Gift>(`/gifts/${item.id}`, {
+        quantityOnHand,
+      });
+      setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)));
       setPendingQuantities((prev) => {
-        const copy = { ...prev };
-        delete copy[item.id];
-        return copy;
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
       });
     } catch (err) {
       setError(
@@ -114,8 +68,10 @@ export function MerchandisePage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Gifts &amp; Cards</h1>
+        <h1>Inventory</h1>
       </div>
+
+      <InventoryTabs />
 
       <label className="filter-toggle">
         <input
@@ -134,8 +90,7 @@ export function MerchandisePage() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Type</th>
-              <th>Group</th>
+              <th>Category</th>
               <th>Price</th>
               <th>Quantity on Hand</th>
               <th>Status</th>
@@ -144,10 +99,9 @@ export function MerchandisePage() {
           </thead>
           <tbody>
             {visibleItems.map((item) => (
-              <tr key={`${item.kind}-${item.id}`}>
+              <tr key={item.id}>
                 <td>{item.name}</td>
-                <td>{item.kind === "gift" ? "Gift" : "Card"}</td>
-                <td>{item.group ?? "—"}</td>
+                <td>{item.category ?? "—"}</td>
                 <td>{formatCents(item.priceCents)}</td>
                 <td>
                   <input
@@ -186,7 +140,7 @@ export function MerchandisePage() {
             ))}
             {visibleItems.length === 0 && (
               <tr>
-                <td colSpan={7}>No items match this view.</td>
+                <td colSpan={6}>No items match this view.</td>
               </tr>
             )}
           </tbody>
