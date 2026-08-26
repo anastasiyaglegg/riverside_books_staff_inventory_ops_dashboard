@@ -7,12 +7,16 @@
 // Prisma's `status` column is an unconstrained string column (see schema
 // comment), and validating it's one of the three real values is Product D's
 // own validator's job, not this mapper's (see the note below).
+// author/price are optional on the wire: books always carry them, but events
+// (mapped below) have no source for them, so per the same no-fabrication rule
+// they're omitted. Product D's validator is the single source of truth for
+// whether a record missing them is usable.
 export type MarketingCatalogRecord = {
   book_id: string;
   title: string;
-  author: string;
+  author?: string;
   genre?: string;
-  price: number;
+  price?: number;
   stock_status?: string;
   description?: string;
   rating?: number;
@@ -57,4 +61,30 @@ export function mapBookToMarketingRecord(book: BookForMarketing): MarketingCatal
 
 export function mapBooksToMarketingCatalog(books: BookForMarketing[]): MarketingCatalogRecord[] {
   return books.map(mapBookToMarketingRecord);
+}
+
+export type EventForMarketing = {
+  id: string;
+  title: string;
+  description: string | null;
+};
+
+// Events flow through the same Product D contract as books. We have no source
+// for author/genre/price/stock/rating on an event, so -- same no-fabrication
+// rule as books -- we send only id, title, and description and let Product D's
+// validator decide (it will reject events until Elliot's contract grows an
+// event record type; this layer just makes the pipe exist). book_id is the
+// contract's record-id field; the event id goes there so any future drafts key
+// back to the right row.
+export function mapEventToMarketingRecord(event: EventForMarketing): MarketingCatalogRecord {
+  return {
+    book_id: event.id,
+    title: event.title,
+    ...(event.description && { description: event.description }),
+    promotional_tag: null,
+  };
+}
+
+export function mapEventsToMarketingCatalog(events: EventForMarketing[]): MarketingCatalogRecord[] {
+  return events.map(mapEventToMarketingRecord);
 }

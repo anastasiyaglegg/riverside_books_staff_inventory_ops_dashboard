@@ -2,7 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail, failValidation } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { generateMarketingContentSchema } from "@/lib/validation/marketing";
-import { mapBooksToMarketingCatalog } from "@/lib/marketing/catalog-mapper";
+import {
+  mapBooksToMarketingCatalog,
+  mapEventsToMarketingCatalog,
+} from "@/lib/marketing/catalog-mapper";
 import { generateMarketingContent, ContentGeneratorError } from "@/lib/marketing/client";
 import { persistGeneratedDrafts } from "@/lib/marketing/persist";
 
@@ -25,16 +28,28 @@ export async function POST(request: Request) {
     return failValidation(parsed.error);
   }
 
-  const books = await prisma.book.findMany({
-    where: { id: { in: parsed.data.bookIds } },
-    include: { inventory: true },
-  });
+  const { bookIds = [], eventIds = [] } = parsed.data;
 
-  const catalog = mapBooksToMarketingCatalog(books);
+  const books = bookIds.length
+    ? await prisma.book.findMany({
+        where: { id: { in: bookIds } },
+        include: { inventory: true },
+      })
+    : [];
+  const events = eventIds.length
+    ? await prisma.event.findMany({ where: { id: { in: eventIds } } })
+    : [];
+
+  const catalog = [...mapBooksToMarketingCatalog(books), ...mapEventsToMarketingCatalog(events)];
 
   try {
     const result = await generateMarketingContent(catalog);
-    await persistGeneratedDrafts(result.generated_drafts);
+    // Only book drafts have a persistence home (BookMarketingContent, keyed by
+    // a real Book id). Event drafts are returned to the caller but not stored
+    // until an event-content model exists -- persisting them here would violate
+    // the bookId foreign key.
+    const bookIdSet = new Set(books.map((b) => b.id));
+    await persistGeneratedDrafts(result.generated_drafts.filter((d) => bookIdSet.has(d.book_id)));
     return ok(result);
   } catch (err) {
     if (err instanceof ContentGeneratorError) {
