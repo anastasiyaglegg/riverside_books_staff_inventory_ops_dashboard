@@ -61,6 +61,16 @@ describe("CardsInventoryPage", () => {
     );
   });
 
+  it("links Add Card to /cards/new", async () => {
+    renderPage();
+    await screen.findByText("Birthday Card");
+
+    expect(screen.getByRole("link", { name: "Add Card" })).toHaveAttribute(
+      "href",
+      "/cards/new",
+    );
+  });
+
   it("lists cards with a stock status", async () => {
     renderPage();
 

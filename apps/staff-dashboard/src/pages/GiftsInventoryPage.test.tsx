@@ -61,6 +61,16 @@ describe("GiftsInventoryPage", () => {
     );
   });
 
+  it("links Add Gift to /gifts/new", async () => {
+    renderPage();
+    await screen.findByText("Enamel Mug");
+
+    expect(screen.getByRole("link", { name: "Add Gift" })).toHaveAttribute(
+      "href",
+      "/gifts/new",
+    );
+  });
+
   it("lists gifts with a stock status", async () => {
     renderPage();
 
