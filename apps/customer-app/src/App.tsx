@@ -11,6 +11,8 @@ import { CatalogPage } from "@/pages/CatalogPage";
 import { GiftsPage } from "@/pages/GiftsPage";
 import { CardsPage } from "@/pages/CardsPage";
 import { BookDetailPage } from "@/pages/BookDetailPage";
+import { GiftDetailPage } from "@/pages/GiftDetailPage";
+import { CardDetailPage } from "@/pages/CardDetailPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { AuthPage } from "@/pages/AuthPage";
 import { OrdersPage } from "@/pages/OrdersPage";
@@ -65,6 +67,22 @@ function AppRoutes() {
         element={
           <AppLayout>
             <BookDetailPage />
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/gifts/:id"
+        element={
+          <AppLayout>
+            <GiftDetailPage />
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/cards/:id"
+        element={
+          <AppLayout>
+            <CardDetailPage />
           </AppLayout>
         }
       />
