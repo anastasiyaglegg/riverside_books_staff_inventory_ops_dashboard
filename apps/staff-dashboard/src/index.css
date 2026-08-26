@@ -126,6 +126,27 @@ body {
   background: var(--color-bg);
 }
 
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.confirm-delete {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .form,
 .login-form {
   display: flex;

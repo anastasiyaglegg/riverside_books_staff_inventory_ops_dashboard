@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "@/lib/api";
 import { dollarsToCents } from "@/lib/money";
 import type { Card } from "@/types";
@@ -23,11 +23,34 @@ const EMPTY_FORM: FormState = {
 };
 
 export function CardFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<Card>(`/cards/${id}`)
+      .then((card) => {
+        setForm({
+          title: card.title,
+          price: (card.priceCents / 100).toString(),
+          occasion: card.occasion ?? "",
+          description: card.description ?? "",
+          imageUrl: card.imageUrl ?? "",
+          quantityOnHand: String(card.quantityOnHand),
+        });
+      })
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Failed to load card"),
+      )
+      .finally(() => setLoading(false));
+  }, [id]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -38,14 +61,25 @@ export function CardFormPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.post<Card>("/cards", {
-        title: form.title,
-        priceCents: dollarsToCents(form.price),
-        occasion: form.occasion || undefined,
-        description: form.description || undefined,
-        imageUrl: form.imageUrl || undefined,
-        quantityOnHand: Number(form.quantityOnHand),
-      });
+      if (isEdit && id) {
+        await api.patch<Card>(`/cards/${id}`, {
+          title: form.title,
+          priceCents: dollarsToCents(form.price),
+          occasion: form.occasion || null,
+          description: form.description || null,
+          imageUrl: form.imageUrl || null,
+          quantityOnHand: Number(form.quantityOnHand),
+        });
+      } else {
+        await api.post<Card>("/cards", {
+          title: form.title,
+          priceCents: dollarsToCents(form.price),
+          occasion: form.occasion || undefined,
+          description: form.description || undefined,
+          imageUrl: form.imageUrl || undefined,
+          quantityOnHand: Number(form.quantityOnHand),
+        });
+      }
       navigate("/inventory/cards");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to save card");
@@ -54,9 +88,13 @@ export function CardFormPage() {
     }
   }
 
+  if (loading) {
+    return <p className="page-loading">Loading…</p>;
+  }
+
   return (
     <div className="page">
-      <h1>Add Card</h1>
+      <h1>{isEdit ? "Edit Card" : "Add Card"}</h1>
       <form className="form" onSubmit={(e) => void handleSubmit(e)}>
         <label htmlFor="title">Title</label>
         <input

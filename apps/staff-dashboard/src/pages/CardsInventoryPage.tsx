@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 import { InventoryTabs } from "@/components/InventoryTabs";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { formatCents } from "@/lib/money";
 import type { Card } from "@/types";
 
@@ -59,6 +60,16 @@ export function CardsInventoryPage() {
       );
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function deleteItem(item: Card) {
+    setError(null);
+    try {
+      await api.delete(`/cards/${item.id}`);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete card");
     }
   }
 
@@ -129,16 +140,25 @@ export function CardsInventoryPage() {
                   />
                 </td>
                 <td>
-                  <button
-                    className="btn btn-secondary"
-                    disabled={
-                      pendingQuantities[item.id] === undefined ||
-                      savingId === item.id
-                    }
-                    onClick={() => void saveQuantity(item)}
-                  >
-                    {savingId === item.id ? "Saving…" : "Save"}
-                  </button>
+                  <div className="row-actions">
+                    <button
+                      className="btn btn-secondary"
+                      disabled={
+                        pendingQuantities[item.id] === undefined ||
+                        savingId === item.id
+                      }
+                      onClick={() => void saveQuantity(item)}
+                    >
+                      {savingId === item.id ? "Saving…" : "Save"}
+                    </button>
+                    <Link
+                      className="btn btn-secondary"
+                      to={`/cards/${item.id}/edit`}
+                    >
+                      Edit
+                    </Link>
+                    <ConfirmDeleteButton onConfirm={() => deleteItem(item)} />
+                  </div>
                 </td>
               </tr>
             ))}

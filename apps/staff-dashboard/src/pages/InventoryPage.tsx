@@ -4,6 +4,7 @@ import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Pagination } from "@/components/Pagination";
 import { InventoryTabs } from "@/components/InventoryTabs";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import type { Inventory, PaginationMeta } from "@/types";
 
 // Mirrors DEFAULT_PAGE_SIZE in lib/pagination.ts on the backend.
@@ -72,6 +73,16 @@ export function InventoryPage() {
       );
     } finally {
       setSavingBookId(null);
+    }
+  }
+
+  async function deleteBook(bookId: string) {
+    setError(null);
+    try {
+      await api.delete(`/books/${bookId}`);
+      setItems((prev) => prev.filter((item) => item.bookId !== bookId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete book");
     }
   }
 
@@ -154,16 +165,27 @@ export function InventoryPage() {
                     : "—"}
                 </td>
                 <td>
-                  <button
-                    className="btn btn-secondary"
-                    disabled={
-                      pendingQuantities[item.bookId] === undefined ||
-                      savingBookId === item.bookId
-                    }
-                    onClick={() => void saveQuantity(item.bookId)}
-                  >
-                    {savingBookId === item.bookId ? "Saving…" : "Save"}
-                  </button>
+                  <div className="row-actions">
+                    <button
+                      className="btn btn-secondary"
+                      disabled={
+                        pendingQuantities[item.bookId] === undefined ||
+                        savingBookId === item.bookId
+                      }
+                      onClick={() => void saveQuantity(item.bookId)}
+                    >
+                      {savingBookId === item.bookId ? "Saving…" : "Save"}
+                    </button>
+                    <Link
+                      className="btn btn-secondary"
+                      to={`/books/${item.bookId}/edit`}
+                    >
+                      Edit
+                    </Link>
+                    <ConfirmDeleteButton
+                      onConfirm={() => deleteBook(item.bookId)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

@@ -98,7 +98,23 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/cards/:id/edit"
+        element={
+          <AuthedLayout>
+            <CardFormPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
         path="/gifts/new"
+        element={
+          <AuthedLayout>
+            <GiftFormPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
+        path="/gifts/:id/edit"
         element={
           <AuthedLayout>
             <GiftFormPage />

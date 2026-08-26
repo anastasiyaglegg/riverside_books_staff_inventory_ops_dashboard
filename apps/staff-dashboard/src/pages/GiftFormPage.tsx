@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "@/lib/api";
 import { dollarsToCents } from "@/lib/money";
 import type { Gift } from "@/types";
@@ -23,11 +23,34 @@ const EMPTY_FORM: FormState = {
 };
 
 export function GiftFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    api
+      .get<Gift>(`/gifts/${id}`)
+      .then((gift) => {
+        setForm({
+          name: gift.name,
+          price: (gift.priceCents / 100).toString(),
+          category: gift.category ?? "",
+          description: gift.description ?? "",
+          imageUrl: gift.imageUrl ?? "",
+          quantityOnHand: String(gift.quantityOnHand),
+        });
+      })
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Failed to load gift"),
+      )
+      .finally(() => setLoading(false));
+  }, [id]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -38,14 +61,25 @@ export function GiftFormPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await api.post<Gift>("/gifts", {
-        name: form.name,
-        priceCents: dollarsToCents(form.price),
-        category: form.category || undefined,
-        description: form.description || undefined,
-        imageUrl: form.imageUrl || undefined,
-        quantityOnHand: Number(form.quantityOnHand),
-      });
+      if (isEdit && id) {
+        await api.patch<Gift>(`/gifts/${id}`, {
+          name: form.name,
+          priceCents: dollarsToCents(form.price),
+          category: form.category || null,
+          description: form.description || null,
+          imageUrl: form.imageUrl || null,
+          quantityOnHand: Number(form.quantityOnHand),
+        });
+      } else {
+        await api.post<Gift>("/gifts", {
+          name: form.name,
+          priceCents: dollarsToCents(form.price),
+          category: form.category || undefined,
+          description: form.description || undefined,
+          imageUrl: form.imageUrl || undefined,
+          quantityOnHand: Number(form.quantityOnHand),
+        });
+      }
       navigate("/inventory/gifts");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to save gift");
@@ -54,9 +88,13 @@ export function GiftFormPage() {
     }
   }
 
+  if (loading) {
+    return <p className="page-loading">Loading…</p>;
+  }
+
   return (
     <div className="page">
-      <h1>Add Gift</h1>
+      <h1>{isEdit ? "Edit Gift" : "Add Gift"}</h1>
       <form className="form" onSubmit={(e) => void handleSubmit(e)}>
         <label htmlFor="name">Name</label>
         <input
