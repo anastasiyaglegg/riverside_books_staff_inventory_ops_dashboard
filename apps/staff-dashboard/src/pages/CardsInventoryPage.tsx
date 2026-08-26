@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, ApiError } from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 import { InventoryTabs } from "@/components/InventoryTabs";
@@ -69,6 +70,9 @@ export function CardsInventoryPage() {
     <div className="page">
       <div className="page-header">
         <h1>Inventory</h1>
+        <Link className="btn btn-primary" to="/cards/new">
+          Add Card
+        </Link>
       </div>
 
       <InventoryTabs />

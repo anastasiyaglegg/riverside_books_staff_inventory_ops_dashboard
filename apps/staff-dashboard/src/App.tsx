@@ -6,6 +6,8 @@ import { LoginPage } from "@/pages/LoginPage";
 import { InventoryPage } from "@/pages/InventoryPage";
 import { CardsInventoryPage } from "@/pages/CardsInventoryPage";
 import { GiftsInventoryPage } from "@/pages/GiftsInventoryPage";
+import { CardFormPage } from "@/pages/CardFormPage";
+import { GiftFormPage } from "@/pages/GiftFormPage";
 import { MarketingEmbedPage } from "@/pages/MarketingEmbedPage";
 import { MarketingContentPage } from "@/pages/MarketingContentPage";
 import { BookFormPage } from "@/pages/BookFormPage";
@@ -84,6 +86,22 @@ function AppRoutes() {
         element={
           <AuthedLayout>
             <GiftsInventoryPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
+        path="/cards/new"
+        element={
+          <AuthedLayout>
+            <CardFormPage />
+          </AuthedLayout>
+        }
+      />
+      <Route
+        path="/gifts/new"
+        element={
+          <AuthedLayout>
+            <GiftFormPage />
           </AuthedLayout>
         }
       />
