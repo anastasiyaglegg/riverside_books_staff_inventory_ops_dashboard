@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #fdf8f3;
-  --color-brand-100: #f7ecdf;
-  --color-brand-200: #ecd9be;
-  --color-brand-300: #dcbb8d;
-  --color-brand-400: #c8985d;
-  --color-brand-600: #8a5a34;
-  --color-brand-700: #6b4226;
-  --color-brand-800: #543219;
-  --color-brand-900: #3c240f;
+  /* Sage-green brand palette, anchored on the chatbot green
+     (#3f5d43 = brand-700, the primary button/nav color) so the storefront
+     matches the embedded chat widget. Replaces the previous brown scale. */
+  --color-brand-50: #f1f5f0;
+  --color-brand-100: #e2eae1;
+  --color-brand-200: #c6d7c6;
+  --color-brand-300: #a1bfa1;
+  --color-brand-400: #7ba07d;
+  --color-brand-500: #5c8562;
+  --color-brand-600: #4c6f50;
+  --color-brand-700: #3f5d43;
+  --color-brand-800: #314733;
+  --color-brand-900: #24331f;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
