@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { ok, fail } from "@/lib/api-response";
+import { ok, fail, failValidation } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth";
 import { buildPaginationMeta, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-import { listGiftsQuerySchema } from "@/lib/validation/gifts";
+import { listGiftsQuerySchema, createGiftSchema } from "@/lib/validation/gifts";
 
 // Public storefront catalog for gifts. Read-only, no auth -- mirrors GET /books.
 // Gifts track stock inline via quantityOnHand, so there's no Inventory join here.
@@ -45,4 +46,22 @@ export async function GET(request: Request) {
   ]);
 
   return ok(gifts, 200, buildPaginationMeta(currentPage, pageSize, totalItems));
+}
+
+// Staff create -- mirrors POST /books, but there's no separate Inventory row to pair:
+// stock lives inline on the Gift row.
+export async function POST(request: Request) {
+  const auth = await requireStaffSession(request);
+  if (!auth.authorized) {
+    return fail("Unauthorized", 401, "UNAUTHORIZED");
+  }
+
+  const body = await request.json();
+  const parsed = createGiftSchema.safeParse(body);
+  if (!parsed.success) {
+    return failValidation(parsed.error);
+  }
+
+  const gift = await prisma.gift.create({ data: parsed.data });
+  return ok(gift, 201);
 }

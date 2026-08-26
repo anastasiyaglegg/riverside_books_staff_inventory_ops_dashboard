@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { ok, fail } from "@/lib/api-response";
+import { ok, fail, failValidation } from "@/lib/api-response";
+import { requireStaffSession } from "@/lib/auth";
 import { buildPaginationMeta, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-import { listCardsQuerySchema } from "@/lib/validation/cards";
+import { listCardsQuerySchema, createCardSchema } from "@/lib/validation/cards";
 
 // Public storefront catalog for greeting cards. Read-only, no auth -- mirrors GET /books.
 // Cards track stock inline via quantityOnHand, so there's no Inventory join here.
@@ -45,4 +46,22 @@ export async function GET(request: Request) {
   ]);
 
   return ok(cards, 200, buildPaginationMeta(currentPage, pageSize, totalItems));
+}
+
+// Staff create -- mirrors POST /books, but there's no separate Inventory row to pair:
+// stock lives inline on the Card row.
+export async function POST(request: Request) {
+  const auth = await requireStaffSession(request);
+  if (!auth.authorized) {
+    return fail("Unauthorized", 401, "UNAUTHORIZED");
+  }
+
+  const body = await request.json();
+  const parsed = createCardSchema.safeParse(body);
+  if (!parsed.success) {
+    return failValidation(parsed.error);
+  }
+
+  const card = await prisma.card.create({ data: parsed.data });
+  return ok(card, 201);
 }
