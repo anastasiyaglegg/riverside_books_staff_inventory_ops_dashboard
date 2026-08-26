@@ -5,11 +5,13 @@ import { MemoryRouter } from "react-router-dom";
 
 const apiGet = vi.fn();
 const apiPatch = vi.fn();
+const apiDelete = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     get: (...args: unknown[]) => apiGet(...args),
     patch: (...args: unknown[]) => apiPatch(...args),
+    delete: (...args: unknown[]) => apiDelete(...args),
   },
   ApiError: class ApiError extends Error {},
 }));
@@ -39,6 +41,7 @@ const OUT_OF_STOCK_GIFT: Gift = {
 beforeEach(() => {
   apiGet.mockReset();
   apiPatch.mockReset();
+  apiDelete.mockReset();
   apiGet.mockResolvedValue([GIFT, OUT_OF_STOCK_GIFT]);
 });
 
@@ -87,6 +90,29 @@ describe("GiftsInventoryPage", () => {
 
     expect(screen.queryByText("Enamel Mug")).not.toBeInTheDocument();
     expect(screen.getByText("Canvas Tote")).toBeInTheDocument();
+  });
+
+  it("links Edit to the gift's edit route", async () => {
+    renderPage();
+    const giftRow = (await screen.findByText("Enamel Mug")).closest("tr")!;
+
+    expect(within(giftRow).getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      "/gifts/gift-1/edit",
+    );
+  });
+
+  it("deletes a gift after confirming", async () => {
+    apiDelete.mockResolvedValue({ id: "gift-1" });
+    const user = userEvent.setup();
+    renderPage();
+
+    const giftRow = (await screen.findByText("Enamel Mug")).closest("tr")!;
+    await user.click(within(giftRow).getByRole("button", { name: "Delete" }));
+    await user.click(within(giftRow).getByRole("button", { name: "Confirm?" }));
+
+    expect(apiDelete).toHaveBeenCalledWith("/gifts/gift-1");
+    expect(screen.queryByText("Enamel Mug")).not.toBeInTheDocument();
   });
 
   it("restocks a gift via PATCH /gifts/:id", async () => {

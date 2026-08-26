@@ -5,11 +5,13 @@ import { MemoryRouter } from "react-router-dom";
 
 const apiGetPaged = vi.fn();
 const apiPatch = vi.fn();
+const apiDelete = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     getPaged: (...args: unknown[]) => apiGetPaged(...args),
     patch: (...args: unknown[]) => apiPatch(...args),
+    delete: (...args: unknown[]) => apiDelete(...args),
   },
   ApiError: class ApiError extends Error {},
 }));
@@ -88,6 +90,7 @@ function pagedResponse(
 beforeEach(() => {
   apiGetPaged.mockReset();
   apiPatch.mockReset();
+  apiDelete.mockReset();
 });
 
 describe("InventoryPage", () => {
@@ -143,6 +146,40 @@ describe("InventoryPage", () => {
     expect(apiPatch).toHaveBeenCalledWith("/inventory/book-1", {
       quantityOnHand: 9,
     });
+  });
+
+  it("links Edit to the book's edit route", async () => {
+    apiGetPaged.mockResolvedValue(pagedResponse(INVENTORY));
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("In Stock Book");
+    expect(screen.getAllByRole("link", { name: "Edit" })[0]).toHaveAttribute(
+      "href",
+      "/books/book-1/edit",
+    );
+  });
+
+  it("deletes a book after confirming", async () => {
+    apiGetPaged.mockResolvedValue(pagedResponse(INVENTORY));
+    apiDelete.mockResolvedValue({ id: "book-1" });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <InventoryPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("In Stock Book");
+    await user.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Confirm?" }));
+
+    expect(apiDelete).toHaveBeenCalledWith("/books/book-1");
+    expect(await screen.findByText("Out Of Stock Book")).toBeInTheDocument();
+    expect(screen.queryByText("In Stock Book")).not.toBeInTheDocument();
   });
 
   it("shows the current page and total pages", async () => {

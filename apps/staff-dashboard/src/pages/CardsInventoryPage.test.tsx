@@ -5,11 +5,13 @@ import { MemoryRouter } from "react-router-dom";
 
 const apiGet = vi.fn();
 const apiPatch = vi.fn();
+const apiDelete = vi.fn();
 
 vi.mock("@/lib/api", () => ({
   api: {
     get: (...args: unknown[]) => apiGet(...args),
     patch: (...args: unknown[]) => apiPatch(...args),
+    delete: (...args: unknown[]) => apiDelete(...args),
   },
   ApiError: class ApiError extends Error {},
 }));
@@ -39,6 +41,7 @@ const IN_STOCK_CARD: Card = {
 beforeEach(() => {
   apiGet.mockReset();
   apiPatch.mockReset();
+  apiDelete.mockReset();
   apiGet.mockResolvedValue([CARD, IN_STOCK_CARD]);
 });
 
@@ -87,6 +90,29 @@ describe("CardsInventoryPage", () => {
 
     expect(screen.getByText("Birthday Card")).toBeInTheDocument();
     expect(screen.queryByText("Thank You Card")).not.toBeInTheDocument();
+  });
+
+  it("links Edit to the card's edit route", async () => {
+    renderPage();
+    await screen.findByText("Birthday Card");
+
+    expect(screen.getAllByRole("link", { name: "Edit" })[0]).toHaveAttribute(
+      "href",
+      "/cards/card-1/edit",
+    );
+  });
+
+  it("deletes a card after confirming", async () => {
+    apiDelete.mockResolvedValue({ id: "card-1" });
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("Birthday Card");
+    await user.click(screen.getAllByRole("button", { name: "Delete" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Confirm?" }));
+
+    expect(apiDelete).toHaveBeenCalledWith("/cards/card-1");
+    expect(screen.queryByText("Birthday Card")).not.toBeInTheDocument();
   });
 
   it("restocks a card via PATCH /cards/:id", async () => {
