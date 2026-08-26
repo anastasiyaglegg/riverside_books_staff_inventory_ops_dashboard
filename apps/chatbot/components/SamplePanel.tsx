@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { BookSample } from "@/lib/types";
+import { CHAT_API_BASE } from "@/lib/chat-api-base";
 import HandoffCard from "./HandoffCard";
 
 interface SamplePanelProps {
@@ -13,7 +14,7 @@ interface SamplePanelProps {
 
 async function recordEvent(sessionId: string, bookId: number, action: "completed") {
   try {
-    await fetch("/api/sample/event", {
+    await fetch(`${CHAT_API_BASE}/api/sample/event`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, book_id: bookId, action }),
@@ -36,7 +37,7 @@ export default function SamplePanel({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/sample/${bookId}`)
+    fetch(`${CHAT_API_BASE}/api/sample/${bookId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!cancelled) setSample(data);

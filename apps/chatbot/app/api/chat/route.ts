@@ -15,6 +15,7 @@ import { getGroundedReply, type ChatTurn } from "@/lib/claude";
 import { validateAndFinalize } from "@/lib/validate";
 import { checkSessionRateLimit, checkIpRateLimit, recordIpRequest } from "@/lib/rate-limit";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { corsHeaders, corsPreflight } from "@/lib/cors";
 import type {
   CatalogItem,
   ChatApiResponse,
@@ -29,6 +30,10 @@ interface ChatRequestBody {
   session_id?: string;
   history?: ChatTurn[];
   customer_email?: string | null;
+}
+
+export async function OPTIONS(request: Request): Promise<NextResponse> {
+  return corsPreflight(request);
 }
 
 function splitByType(items: CatalogItem[]) {
@@ -212,16 +217,18 @@ async function logChatTurn(params: {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const cors = corsHeaders(request.headers.get("origin"));
+
   let body: ChatRequestBody;
   try {
     body = (await request.json()) as ChatRequestBody;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400, headers: cors });
   }
 
   const message = body.message?.trim();
   if (!message) {
-    return NextResponse.json({ error: "message is required" }, { status: 400 });
+    return NextResponse.json({ error: "message is required" }, { status: 400, headers: cors });
   }
   const sessionId = body.session_id?.trim() || randomUUID();
   const history = Array.isArray(body.history) ? body.history : [];
@@ -229,11 +236,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const ip = getClientIp(request);
   if (!checkIpRateLimit(ip)) {
-    return NextResponse.json({ error: "Daily rate limit exceeded" }, { status: 429 });
+    return NextResponse.json({ error: "Daily rate limit exceeded" }, { status: 429, headers: cors });
   }
   const sessionOk = await checkSessionRateLimit(sessionId);
   if (!sessionOk) {
-    return NextResponse.json({ error: "Rate limit exceeded, slow down" }, { status: 429 });
+    return NextResponse.json({ error: "Rate limit exceeded, slow down" }, { status: 429, headers: cors });
   }
   recordIpRequest(ip);
 
@@ -285,5 +292,5 @@ export async function POST(request: Request): Promise<NextResponse> {
     session_id: sessionId,
   };
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, { headers: cors });
 }

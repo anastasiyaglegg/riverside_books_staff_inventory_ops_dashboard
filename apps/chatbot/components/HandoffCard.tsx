@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { StoreInfoRow } from "@/lib/types";
+import { CHAT_API_BASE } from "@/lib/chat-api-base";
 
 export default function HandoffCard() {
   const [info, setInfo] = useState<StoreInfoRow[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/store-info?category=contact,hours")
+    fetch(`${CHAT_API_BASE}/api/store-info?category=contact,hours`)
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled) setInfo(data.results ?? []);
