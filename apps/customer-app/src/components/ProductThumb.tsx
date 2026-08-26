@@ -21,7 +21,7 @@ function BookThumb({
 }) {
   const coverUrl = useCoverUrl(product.name, product.subtitle ?? "", product.imageUrl);
   return coverUrl ? (
-    <img src={coverUrl} alt={product.name} className={imageClassName} loading="lazy" decoding="async" />
+    <img src={coverUrl} alt={product.name} className={imageClassName} decoding="async" />
   ) : (
     <span className={fallbackClassName}>{KIND_FALLBACK.book}</span>
   );
@@ -46,14 +46,12 @@ export function ProductThumb({
     );
   }
 
+  // No loading="lazy" -- with these cards rendered inside a CSS grid, the browser can't
+  // resolve intersection with the viewport until layout settles, so the image request
+  // never fires at all (confirmed via zero resource-timing entries) rather than merely
+  // being deferred.
   return product.imageUrl ? (
-    <img
-      src={product.imageUrl}
-      alt={product.name}
-      className={imageClassName}
-      loading="lazy"
-      decoding="async"
-    />
+    <img src={product.imageUrl} alt={product.name} className={imageClassName} decoding="async" />
   ) : (
     <span className={fallbackClassName}>{KIND_FALLBACK[product.kind]}</span>
   );
