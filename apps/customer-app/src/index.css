@@ -154,6 +154,21 @@ body {
   line-height: 1;
 }
 
+.rb-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rb-header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .rb-messages {
   flex: 1;
   overflow-y: auto;
