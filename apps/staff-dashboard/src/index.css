@@ -1,14 +1,30 @@
 :root {
-  --color-bg: #f7f6f3;
+  /* Riverside Books brand palette: Riverbed Navy (primary), Willow Sage (success),
+     Honey Lantern (warning), Rose Blush (danger/error), Parchment White (surfaces),
+     Ink Charcoal (text). */
+  --color-bg: #f9f6f0;
   --color-surface: #ffffff;
-  --color-border: #e0ddd6;
-  --color-text: #2b2620;
-  --color-muted: #7a746a;
-  --color-primary: #6b4226;
-  --color-primary-hover: #543219;
-  --color-danger: #b3432b;
+  --color-border: #ded9cc;
+  --color-text: #2b2d42;
+  --color-muted: #6f707d;
+  --color-primary: #1c324b;
+  --color-primary-hover: #16283c;
+  --color-danger: #c03737;
+  --color-sage: #4a6b5b;
+  --color-sage-bg: #dbe6e1;
+  --color-honey: #e5a440;
+  --color-honey-bg: #f9ead4;
+  --color-rose-bg: #f6dfdf;
   --radius: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.font-serif {
+  font-family: "Lora", Georgia, "Times New Roman", serif;
+}
+
+.font-script {
+  font-family: "Caveat", cursive;
 }
 
 * {
@@ -26,12 +42,13 @@ body {
   align-items: center;
   gap: 24px;
   padding: 12px 24px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary-hover);
 }
 
 .navbar-title {
   font-weight: 600;
+  color: #fff;
 }
 
 .navbar-links {
@@ -43,15 +60,15 @@ body {
 .navbar-link {
   padding: 6px 12px;
   border-radius: var(--radius);
-  color: var(--color-muted);
+  color: #cbdaec;
   text-decoration: none;
   font-size: 14px;
 }
 
 .navbar-link.active,
 .navbar-link:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--color-honey);
 }
 
 .app-main {
@@ -95,7 +112,7 @@ body {
 }
 
 .tab-link.active {
-  border-bottom-color: var(--color-primary);
+  border-bottom-color: var(--color-honey);
 }
 
 .btn {
@@ -233,6 +250,14 @@ body {
   color: var(--color-muted);
 }
 
+.data-table tbody tr:nth-child(even) {
+  background: var(--color-bg);
+}
+
+.data-table td {
+  color: var(--color-text);
+}
+
 .qty-input {
   width: 70px;
   padding: 4px 6px;
@@ -258,37 +283,37 @@ body {
 }
 
 .badge-in_stock {
-  background: #e3f0e3;
-  color: #2f6b2f;
+  background: var(--color-sage-bg);
+  color: var(--color-sage);
 }
 
 .badge-low_stock {
-  background: #fbe8cc;
-  color: #8a5a10;
+  background: var(--color-honey-bg);
+  color: #7a5011;
 }
 
 .badge-out_of_stock {
-  background: #f6d9d4;
-  color: #a3341e;
+  background: var(--color-rose-bg);
+  color: #782222;
 }
 
 .badge-placed {
-  background: #dde6f6;
-  color: #2c4c8a;
+  background: #cbdaec;
+  color: var(--color-primary);
 }
 
 .badge-ready_for_pickup {
-  background: #fbe8cc;
-  color: #8a5a10;
+  background: var(--color-honey-bg);
+  color: #7a5011;
 }
 
 .badge-completed {
-  background: #e3f0e3;
-  color: #2f6b2f;
+  background: var(--color-sage-bg);
+  color: var(--color-sage);
 }
 
 .badge-cancelled {
-  background: #ece9e3;
+  background: #e6e1d5;
   color: var(--color-muted);
 }
 
