@@ -4,7 +4,6 @@ import { CustomerProvider } from "@/lib/customer-context";
 import { CartProvider } from "@/lib/cart-context";
 import { FavoritesProvider } from "@/lib/favorites-context";
 import { NavBar } from "@/components/NavBar";
-import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CatalogPage } from "@/pages/CatalogPage";
@@ -27,7 +26,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-50">
       <NavBar />
-      <EmailVerificationBanner />
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
       <ChatWidget />
     </div>

@@ -10,7 +10,6 @@ import {
   browserSessionPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  sendEmailVerification,
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
@@ -20,7 +19,7 @@ import {
 import { auth } from "@/lib/firebase";
 
 type AuthContextValue = {
-  // The Firebase credential/session user -- identity only (email, uid, emailVerified).
+  // The Firebase credential/session user -- identity only (email, uid).
   // Loyalty/orders data lives in customer-context, joined by email. See AccountPage.
   user: User | null;
   // True until the first onAuthStateChanged fires, so guards can show a spinner instead
@@ -30,7 +29,6 @@ type AuthContextValue = {
   signUp: (email: string, password: string, keepSignedIn: boolean) => Promise<User>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  resendVerification: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -65,9 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string, keepSignedIn: boolean) {
     await applyPersistence(keepSignedIn);
     const credential = await createUserWithEmailAndPassword(auth, email, password);
-    // Fire-and-forget the verification email; a failure here (e.g. rate limit) must not
-    // block account creation -- the soft banner lets them resend later.
-    void sendEmailVerification(credential.user).catch(() => undefined);
     return credential.user;
   }
 
@@ -79,12 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   }
 
-  async function resendVerification() {
-    if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
-    }
-  }
-
   return (
     <AuthContext.Provider
       value={{
@@ -94,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signOut,
         resetPassword,
-        resendVerification,
       }}
     >
       {children}

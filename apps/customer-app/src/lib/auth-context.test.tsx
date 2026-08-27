@@ -12,12 +12,11 @@ const mocks = vi.hoisted(() => ({
   setPersistence: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
-  sendEmailVerification: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
   firebaseSignOut: vi.fn(),
 }));
 const calls = mocks.calls;
-const { signInWithEmailAndPassword, sendEmailVerification } = mocks;
+const { signInWithEmailAndPassword } = mocks;
 
 vi.mock("firebase/auth", () => ({
   browserLocalPersistence: "LOCAL",
@@ -37,13 +36,9 @@ vi.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: mocks.createUserWithEmailAndPassword.mockImplementation(
     () => {
       mocks.calls.push("createUser");
-      return Promise.resolve({ user: { uid: "u1", emailVerified: false } });
+      return Promise.resolve({ user: { uid: "u1" } });
     },
   ),
-  sendEmailVerification: mocks.sendEmailVerification.mockImplementation(() => {
-    mocks.calls.push("sendEmailVerification");
-    return Promise.resolve();
-  }),
   sendPasswordResetEmail: mocks.sendPasswordResetEmail.mockResolvedValue(undefined),
   signOut: mocks.firebaseSignOut.mockResolvedValue(undefined),
 }));
@@ -110,7 +105,7 @@ describe("AuthProvider", () => {
     expect(calls).toEqual(["setPersistence:SESSION", "signIn"]);
   });
 
-  it("sends a verification email after creating the account on signup", async () => {
+  it("creates the account on signup without requiring email verification", async () => {
     const user = userEvent.setup();
     render(
       <AuthProvider>
@@ -119,11 +114,6 @@ describe("AuthProvider", () => {
     );
     await user.click(screen.getByText("SignUp"));
 
-    await waitFor(() => expect(sendEmailVerification).toHaveBeenCalled());
-    expect(calls).toEqual([
-      "setPersistence:LOCAL",
-      "createUser",
-      "sendEmailVerification",
-    ]);
+    await waitFor(() => expect(calls).toEqual(["setPersistence:LOCAL", "createUser"]));
   });
 });

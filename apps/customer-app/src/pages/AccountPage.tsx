@@ -7,52 +7,6 @@ import { STAMPS_PER_REWARD } from "@/lib/loyalty";
 import { customerFullName, type Order } from "@/types";
 import { OrderRow } from "@/components/OrderRow";
 
-// Shown only when GET /customers/me refused to link (403 EMAIL_NOT_VERIFIED): an account
-// already exists for this email, and the backend won't hand it over until the Firebase
-// email is verified. Not a reconnect form anymore -- the linking is automatic once the
-// email is confirmed, so we just nudge verification.
-function VerifyEmailCard() {
-  const { user, resendVerification } = useAuth();
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
-  async function handleResend() {
-    setStatus("sending");
-    try {
-      await resendVerification();
-      setStatus("sent");
-    } catch {
-      setStatus("error");
-    }
-  }
-
-  return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-stone-900">Verify your email to continue</h2>
-      <p className="mt-1 text-sm text-stone-500">
-        An account already exists for {user?.email}. For your security, confirm your email
-        to link it — then your loyalty stamps and pre-order history restore automatically.
-      </p>
-      {status === "sent" ? (
-        <p className="mt-4 text-sm font-medium text-emerald-700">
-          Verification email sent. Click the link, then reload this page.
-        </p>
-      ) : (
-        <button
-          type="button"
-          onClick={handleResend}
-          disabled={status === "sending"}
-          className="mt-4 rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-800 disabled:cursor-default disabled:opacity-50"
-        >
-          {status === "sending" ? "Sending…" : "Resend verification email"}
-        </button>
-      )}
-      {status === "error" && (
-        <p className="mt-2 text-sm text-rose-600">Couldn't send. Please try again shortly.</p>
-      )}
-    </div>
-  );
-}
-
 function OrderHistory({ customerId }: { customerId: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,10 +81,8 @@ export function AccountPage() {
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
   // Tracks the GET /customers/me resolution so the no-customer view can tell "still
-  // loading" from "blocked on email verification (403)" from "failed".
-  const [meStatus, setMeStatus] = useState<"loading" | "resolved" | "unverified" | "error">(
-    "loading",
-  );
+  // loading" from "failed".
+  const [meStatus, setMeStatus] = useState<"loading" | "resolved" | "error">("loading");
 
   useEffect(() => {
     if (!user) {
@@ -138,12 +90,12 @@ export function AccountPage() {
     }
     let cancelled = false;
     setMeStatus("loading");
-    // Firebase-authed self-lookup: links the uid to the backend record (verified email)
-    // or creates it, and returns fresh loyalty/order data -- the cross-device restore.
+    // Firebase-authed self-lookup: links the uid to the backend record (or creates it)
+    // and returns fresh loyalty/order data -- the cross-device restore.
     loadMe()
-      .then((result) => {
+      .then(() => {
         if (!cancelled) {
-          setMeStatus(result ? "resolved" : "unverified");
+          setMeStatus("resolved");
         }
       })
       .catch(() => {
@@ -164,7 +116,7 @@ export function AccountPage() {
   }
 
   // Behind ProtectedRoute, so there's always a Firebase user. No customer record yet means
-  // /customers/me is still resolving, was refused (unverified email), or errored.
+  // /customers/me is still resolving or errored.
   if (!customer) {
     return (
       <div className="flex flex-col gap-6">
@@ -178,9 +130,7 @@ export function AccountPage() {
             Log out
           </button>
         </div>
-        {meStatus === "unverified" ? (
-          <VerifyEmailCard />
-        ) : meStatus === "error" ? (
+        {meStatus === "error" ? (
           <p className="text-sm text-rose-600">
             Couldn't load your account. Please reload the page.
           </p>

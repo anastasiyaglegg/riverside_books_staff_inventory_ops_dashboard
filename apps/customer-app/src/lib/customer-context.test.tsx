@@ -119,31 +119,6 @@ describe("CustomerProvider", () => {
     expect(url).toContain("/customers/me");
   });
 
-  it("loadMe() leaves the customer unset on a 403 EMAIL_NOT_VERIFIED", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        json: () =>
-          Promise.resolve({ data: null, error: { message: "verify", code: "EMAIL_NOT_VERIFIED" } }),
-      }),
-    );
-    const user = userEvent.setup();
-
-    render(
-      <CustomerProvider>
-        <TestHarness />
-      </CustomerProvider>,
-    );
-    await user.click(screen.getByText("Load me"));
-
-    // No throw, and the customer stays unset so the caller can nudge verification.
-    await waitFor(() =>
-      expect(screen.getByTestId("customer-name")).toHaveTextContent("none"),
-    );
-  });
-
   it("signOut() clears the customer and localStorage", async () => {
     localStorage.setItem("riverside_customer", JSON.stringify(MOCK_CUSTOMER));
     const user = userEvent.setup();
