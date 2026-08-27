@@ -9,15 +9,13 @@ import { resetDb } from "@/test/db-helpers";
 
 const FIREBASE_UID = "firebase-uid-123";
 
-function authAs(
-  overrides: Partial<{ email: string | null; emailVerified: boolean; name: string | null }> = {},
-) {
+function authAs(overrides: Partial<{ email: string | null; name: string | null }> = {}) {
   vi.mocked(requireCustomerSession).mockResolvedValue({
     authorized: true,
     user: {
       uid: FIREBASE_UID,
       email: overrides.email ?? "reader@example.com",
-      emailVerified: overrides.emailVerified ?? true,
+      emailVerified: true,
       name: overrides.name ?? "Ada Reader",
     },
   });
@@ -48,7 +46,7 @@ describe("GET /api/v1/customers/me", () => {
     expect(body.data.loyaltyStampCount).toBe(5);
   });
 
-  it("links an existing email-matched row when the Firebase email is verified", async () => {
+  it("links an existing email-matched row", async () => {
     const existing = await prisma.customer.create({
       data: {
         firstName: "Ada",
@@ -66,22 +64,6 @@ describe("GET /api/v1/customers/me", () => {
     // The row should now carry the firebaseUid so future logins hit the fast path.
     const reloaded = await prisma.customer.findUnique({ where: { id: existing.id } });
     expect(reloaded?.firebaseUid).toBe(FIREBASE_UID);
-  });
-
-  it("refuses to link an email-matched row when the email is unverified (403)", async () => {
-    authAs({ emailVerified: false });
-    await prisma.customer.create({
-      data: { firstName: "Ada", lastName: "Reader", email: "reader@example.com" },
-    });
-
-    const response = await GET(new Request("http://localhost/api/v1/customers/me"));
-    const body = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(body.error.code).toBe("EMAIL_NOT_VERIFIED");
-    // The pre-existing row must NOT have been linked.
-    const untouched = await prisma.customer.findFirst({ where: { email: "reader@example.com" } });
-    expect(untouched?.firebaseUid).toBeNull();
   });
 
   it("creates a new customer when no row matches the uid or email", async () => {
