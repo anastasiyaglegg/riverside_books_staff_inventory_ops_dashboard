@@ -202,8 +202,6 @@ export function AccountPage() {
     }
   }
 
-  const stampProgress = Math.min(customer.loyaltyStampCount / STAMPS_PER_REWARD, 1) * 100;
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -222,31 +220,46 @@ export function AccountPage() {
         <p className="text-sm text-stone-500">{user?.email ?? customer.email ?? customer.phone}</p>
       </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-stone-900">Loyalty Stamps</h2>
-        <p className="mt-2 text-3xl font-bold text-brand-800">
-          {customer.loyaltyStampCount}{" "}
-          <span className="text-base font-medium text-stone-400">/ {STAMPS_PER_REWARD}</span>
-        </p>
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-stone-100">
-          <div
-            className="h-full rounded-full bg-brand-600 transition-all"
-            style={{ width: `${stampProgress}%` }}
-          />
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+        {/* Library-card styling per brand spec: Riverbed Navy header, Rose Blush hearts
+            for earned stamps instead of a plain progress bar. */}
+        <div className="flex items-center justify-between bg-brand-700 px-6 py-4 text-white">
+          <h2 className="font-script text-2xl">Loyalty Stamps</h2>
+          <p className="text-lg font-semibold">
+            {customer.loyaltyStampCount}
+            <span className="text-sm font-medium text-brand-200"> / {STAMPS_PER_REWARD}</span>
+          </p>
         </div>
-        <p className="mt-3 text-sm text-stone-500">
-          Earn a stamp with every purchase — we add it automatically once your order is
-          completed, whether you paid online or picked up in store. Collect {STAMPS_PER_REWARD}{" "}
-          stamps for a free reward — ask staff to redeem it at checkout.
-        </p>
-        <button
-          type="button"
-          className="mt-4 rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 disabled:cursor-default disabled:opacity-50"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          {refreshing ? "Refreshing…" : "Refresh"}
-        </button>
+        <div className="p-6">
+          <div className="flex flex-wrap gap-1.5" aria-hidden="true">
+            {Array.from({ length: STAMPS_PER_REWARD }, (_, index) => (
+              <span
+                key={index}
+                className={`text-2xl leading-none ${
+                  index < customer.loyaltyStampCount ? "text-rose-600" : "text-stone-200"
+                }`}
+              >
+                {index < customer.loyaltyStampCount ? "♥" : "♡"}
+              </span>
+            ))}
+          </div>
+          <p className="sr-only">
+            {customer.loyaltyStampCount} of {STAMPS_PER_REWARD} stamps earned
+          </p>
+          <p className="mt-4 text-sm text-stone-500">
+            Earn a stamp with every purchase — we add it automatically once your order is
+            completed, whether you paid online or picked up in store. Collect {STAMPS_PER_REWARD}{" "}
+            stamps for a free reward — ask staff to redeem it at checkout.
+          </p>
+          <button
+            type="button"
+            className="mt-4 rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 disabled:cursor-default disabled:opacity-50"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">

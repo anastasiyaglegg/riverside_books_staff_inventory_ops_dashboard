@@ -112,8 +112,8 @@ export function BookDetailPage() {
         <BookCover book={book} imageClassName="h-full w-full object-cover" fallbackClassName="text-6xl" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-stone-900">{book.title}</h1>
-        <p className="mt-1 text-stone-500">by {book.author}</p>
+        <h1 className="font-serif text-2xl font-bold text-stone-900">{book.title}</h1>
+        <p className="font-serif mt-1 text-stone-500">by {book.author}</p>
         {book.category && (
           <p className="mt-1 text-sm capitalize text-stone-400">{book.category}</p>
         )}

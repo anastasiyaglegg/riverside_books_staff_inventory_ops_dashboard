@@ -17,10 +17,10 @@ export function BookCard({ book }: { book: Book }) {
         <FavoriteButton book={book} className="absolute right-2 top-2 shadow-sm" />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">
-        <p className="line-clamp-2 font-semibold text-stone-900 group-hover:text-brand-700">
+        <p className="line-clamp-2 font-serif font-semibold text-stone-900 group-hover:text-brand-700">
           {book.title}
         </p>
-        <p className="text-sm text-stone-500">{book.author}</p>
+        <p className="font-serif text-sm text-stone-500">{book.author}</p>
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="font-semibold text-brand-800">{formatCents(book.priceCents)}</span>
           <StockBadge status={book.inventory?.status} />

@@ -1,20 +1,86 @@
 @import "tailwindcss";
 
 @theme {
-  /* Sage-green brand palette, anchored on the chatbot green
-     (#3f5d43 = brand-700, the primary button/nav color) so the storefront
-     matches the embedded chat widget. Replaces the previous brown scale. */
-  --color-brand-50: #f1f5f0;
-  --color-brand-100: #e2eae1;
-  --color-brand-200: #c6d7c6;
-  --color-brand-300: #a1bfa1;
-  --color-brand-400: #7ba07d;
-  --color-brand-500: #5c8562;
-  --color-brand-600: #4c6f50;
-  --color-brand-700: #3f5d43;
-  --color-brand-800: #314733;
-  --color-brand-900: #24331f;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Riverside Books brand palette (Riverbed Navy, Willow Sage, Honey Lantern,
+     Rose Blush, Parchment, Ink Charcoal). Each named Tailwind scale below is
+     overridden in full so every existing background, text, and border utility
+     across the app picks up the new brand colors without touching component
+     markup -- brand=Riverbed Navy, emerald=Willow Sage (in-stock), amber=Honey
+     Lantern (low-stock), rose=Rose Blush (out-of-stock, hearts), sky=Riverbed
+     Navy tint (informational badges), stone=Parchment White to Ink Charcoal
+     neutral scale. */
+  --color-brand-50: #f4f7fb;
+  --color-brand-100: #cbdaec;
+  --color-brand-200: #a2bedc;
+  --color-brand-300: #7aa1cd;
+  --color-brand-400: #5184be;
+  --color-brand-500: #3a689c;
+  --color-brand-600: #2b4d74;
+  --color-brand-700: #1c324b;
+  --color-brand-800: #16283c;
+  --color-brand-900: #111e2d;
+
+  --color-emerald-50: #f6f9f7;
+  --color-emerald-100: #dbe6e1;
+  --color-emerald-200: #c1d4cb;
+  --color-emerald-300: #a6c2b5;
+  --color-emerald-400: #8caf9e;
+  --color-emerald-500: #719d88;
+  --color-emerald-600: #5c8572;
+  --color-emerald-700: #4a6b5b;
+  --color-emerald-800: #32483d;
+  --color-emerald-900: #19241f;
+
+  --color-amber-50: #fdf9f2;
+  --color-amber-100: #f9ead4;
+  --color-amber-200: #f5dcb6;
+  --color-amber-300: #f1ce99;
+  --color-amber-400: #edc07b;
+  --color-amber-500: #e9b25e;
+  --color-amber-600: #e5a440;
+  --color-amber-700: #be7d1a;
+  --color-amber-800: #7a5011;
+  --color-amber-900: #362407;
+
+  --color-rose-50: #fcf3f3;
+  --color-rose-100: #f6dfdf;
+  --color-rose-200: #f0cbcb;
+  --color-rose-300: #eab7b7;
+  --color-rose-400: #e5a2a2;
+  --color-rose-500: #df8e8e;
+  --color-rose-600: #d97a7a;
+  --color-rose-700: #c03737;
+  --color-rose-800: #782222;
+  --color-rose-900: #300e0e;
+
+  --color-sky-50: #f4f7fb;
+  --color-sky-100: #cbdaec;
+  --color-sky-200: #a2bedc;
+  --color-sky-300: #7aa1cd;
+  --color-sky-400: #5184be;
+  --color-sky-500: #3a689c;
+  --color-sky-600: #2b4d74;
+  --color-sky-700: #1c324b;
+  --color-sky-800: #16283c;
+  --color-sky-900: #111e2d;
+
+  --color-stone-50: #f9f6f0;
+  --color-stone-100: #dedee1;
+  --color-stone-200: #c7c8cd;
+  --color-stone-300: #b1b2ba;
+  --color-stone-400: #9a9ba6;
+  --color-stone-500: #848592;
+  --color-stone-600: #6f707d;
+  --color-stone-700: #5b5c67;
+  --color-stone-800: #474850;
+  --color-stone-900: #2b2d42;
+
+  /* Typography hierarchy: sans for UI/data, serif for book titles/author names/
+     modal titles, script for brand accents and loyalty reward titles. Loaded via
+     Google Fonts link in index.html. */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+  --font-script: "Caveat", cursive;
 }
 
 body {
@@ -31,7 +97,7 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #3f5d43;
+  background: #1c324b;
   color: #fff;
   border: none;
   font-size: 24px;
@@ -70,7 +136,7 @@ body {
 }
 
 .rb-header {
-  background: #3f5d43;
+  background: #1c324b;
   color: #fff;
   padding: 14px 16px;
   display: flex;
@@ -105,13 +171,13 @@ body {
 }
 
 .rb-chip {
-  background: #eef1e9;
-  border: 1px solid #d7ddcc;
+  background: #edf2f0;
+  border: 1px solid #c9d6ce;
   border-radius: 16px;
   padding: 6px 12px;
   font-size: 0.8rem;
   cursor: pointer;
-  color: #33422f;
+  color: #32483d;
 }
 
 .rb-bubble {
@@ -125,21 +191,21 @@ body {
 
 .rb-bubble.user {
   align-self: flex-end;
-  background: #3f5d43;
+  background: #1c324b;
   color: #fff;
   border-bottom-right-radius: 4px;
 }
 
 .rb-bubble.assistant {
   align-self: flex-start;
-  background: #f1efe9;
-  color: #24211d;
+  background: #f3efe6;
+  color: #2b2d42;
   border-bottom-left-radius: 4px;
 }
 
 .rb-typing {
   align-self: flex-start;
-  color: #837b6f;
+  color: #6f707d;
   font-size: 0.85rem;
   padding: 4px 14px;
 }
@@ -160,7 +226,7 @@ body {
 }
 
 .rb-input-row button {
-  background: #3f5d43;
+  background: #1c324b;
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -175,7 +241,7 @@ body {
 }
 
 .rb-card {
-  border: 1px solid #e3e0d8;
+  border: 1px solid #e6e1d5;
   border-radius: 10px;
   padding: 12px;
   background: #fff;
@@ -187,7 +253,7 @@ body {
 .rb-card-cover {
   width: 48px;
   height: 68px;
-  background: #d7ddcc;
+  background: #d8e4de;
   border-radius: 4px;
   flex-shrink: 0;
 }
@@ -205,7 +271,7 @@ body {
 
 .rb-card-author {
   font-size: 0.78rem;
-  color: #77705f;
+  color: #6f707d;
   margin: 0 0 4px;
 }
 
@@ -224,18 +290,18 @@ body {
 }
 
 .rb-stock.in_stock {
-  background: #e3f1e1;
-  color: #2c6b2f;
+  background: #dbe6e1;
+  color: #32483d;
 }
 
 .rb-stock.low_stock {
-  background: #fdf0d5;
-  color: #8a5a00;
+  background: #f9ead4;
+  color: #7a5011;
 }
 
 .rb-stock.out_of_stock {
-  background: #f8e2df;
-  color: #a3372a;
+  background: #f6dfdf;
+  color: #782222;
 }
 
 .rb-card-actions {
@@ -248,23 +314,23 @@ body {
   font-size: 0.78rem;
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid #3f5d43;
+  border: 1px solid #1c324b;
   background: #fff;
-  color: #3f5d43;
+  color: #1c324b;
   cursor: pointer;
 }
 
 .rb-btn.primary {
-  background: #3f5d43;
+  background: #1c324b;
   color: #fff;
 }
 
 .rb-sample-panel {
   margin-top: 8px;
-  border: 1px solid #e3e0d8;
+  border: 1px solid #e6e1d5;
   border-radius: 10px;
   overflow: hidden;
-  background: #fbfaf7;
+  background: #f9f6f0;
 }
 
 .rb-sample-body {
@@ -277,7 +343,7 @@ body {
 
 .rb-sample-credit {
   font-size: 0.7rem;
-  color: #918a7c;
+  color: #848592;
   margin-top: 8px;
 }
 
@@ -292,7 +358,7 @@ body {
 }
 
 .rb-handoff {
-  border: 1px solid #e3e0d8;
+  border: 1px solid #e6e1d5;
   border-radius: 10px;
   padding: 12px;
   background: #fff;

@@ -127,7 +127,7 @@ export function NavBar() {
   return (
     <header className="sticky top-0 z-10 border-b border-brand-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center gap-8 px-6 py-4">
-        <NavLink to="/catalog" className="text-lg font-semibold tracking-tight text-brand-800">
+        <NavLink to="/catalog" className="font-script text-2xl font-semibold tracking-tight text-brand-800">
           Riverside Books
         </NavLink>
         <nav className="flex flex-1 items-center gap-1">
