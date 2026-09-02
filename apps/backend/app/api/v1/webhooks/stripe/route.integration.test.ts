@@ -64,6 +64,60 @@ describe("POST /api/v1/webhooks/stripe", () => {
     expect(order?.items[0]?.unitPriceCents).toBe(1500);
   });
 
+  it("earns one loyalty stamp for the customer when payment completes", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Paid Book", author: "Tester", priceCents: 1500 },
+    });
+    const customer = await prisma.customer.create({
+      data: { firstName: "Ada", lastName: "Reader", email: "ada@example.com" },
+    });
+    constructEvent.mockReturnValue(
+      completedEvent({
+        id: "cs_paid_stamp",
+        payment_status: "paid",
+        metadata: {
+          items: JSON.stringify([{ bookId: book.id, quantity: 1 }]),
+          customerId: customer.id,
+        },
+      }),
+    );
+
+    await POST(webhookRequest());
+
+    const updated = await prisma.customer.findUnique({ where: { id: customer.id } });
+    expect(updated?.loyaltyStampCount).toBe(1);
+    const order = await prisma.order.findUnique({ where: { stripeSessionId: "cs_paid_stamp" } });
+    const tx = await prisma.loyaltyTransaction.findFirst({ where: { customerId: customer.id } });
+    expect(tx?.type).toBe("earn");
+    expect(tx?.relatedOrderId).toBe(order?.id);
+  });
+
+  it("does not earn a second stamp when the paid event is retried", async () => {
+    const book = await prisma.book.create({
+      data: { title: "Paid Book", author: "Tester", priceCents: 1500 },
+    });
+    const customer = await prisma.customer.create({
+      data: { firstName: "Ada", lastName: "Reader", email: "ada@example.com" },
+    });
+    constructEvent.mockReturnValue(
+      completedEvent({
+        id: "cs_paid_stamp_retry",
+        payment_status: "paid",
+        metadata: {
+          items: JSON.stringify([{ bookId: book.id, quantity: 1 }]),
+          customerId: customer.id,
+        },
+      }),
+    );
+
+    await POST(webhookRequest());
+    await POST(webhookRequest());
+
+    const updated = await prisma.customer.findUnique({ where: { id: customer.id } });
+    expect(updated?.loyaltyStampCount).toBe(1);
+    expect(await prisma.loyaltyTransaction.count({ where: { customerId: customer.id } })).toBe(1);
+  });
+
   it("fulfills an order containing a gift and a card", async () => {
     const gift = await prisma.gift.create({ data: { name: "Enamel Mug", priceCents: 1200 } });
     const card = await prisma.card.create({ data: { title: "Birthday Card", priceCents: 500 } });

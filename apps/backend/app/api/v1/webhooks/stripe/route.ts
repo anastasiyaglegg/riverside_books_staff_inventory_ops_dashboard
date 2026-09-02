@@ -2,7 +2,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { resolveCart, type CartItem } from "@/lib/checkout";
 import { findOrCreateCustomer, splitName } from "@/lib/customers";
-import { decrementStockForOrderItems } from "@/lib/fulfillment";
+import { decrementStockForOrderItems, earnStampForOrder } from "@/lib/fulfillment";
 import { prisma } from "@/lib/prisma";
 
 // Stripe payment webhook. Fulfillment (writing the paid order) happens HERE, not on the
@@ -70,9 +70,12 @@ async function fulfillCheckout(session: Stripe.Checkout.Session): Promise<void> 
     customerId = customer.id;
   }
 
-  // Persist the paid order and reserve its stock atomically -- same rule as POST /orders.
+  // Persist the paid order, reserve its stock, and earn the loyalty stamp atomically.
+  // Online payment is the fulfillment moment for a pre-order, so the stamp is earned here
+  // rather than waiting for staff to mark it completed (earnStampForOrder is idempotent,
+  // so the later completion transition won't double-earn it).
   await prisma.$transaction(async (tx) => {
-    await tx.order.create({
+    const order = await tx.order.create({
       data: {
         customerId,
         status: "placed",
@@ -83,5 +86,6 @@ async function fulfillCheckout(session: Stripe.Checkout.Session): Promise<void> 
       },
     });
     await decrementStockForOrderItems(tx, resolved.orderItems);
+    await earnStampForOrder(tx, customerId, order.id);
   });
 }

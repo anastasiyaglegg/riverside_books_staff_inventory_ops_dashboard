@@ -2,8 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ok, fail, failValidation } from "@/lib/api-response";
 import { requireStaffSession } from "@/lib/auth";
 import { isValidOrderStatusTransition, type OrderStatus } from "@/lib/orders";
-import { applyEarn } from "@/lib/loyalty";
-import { restoreStockForOrderItems } from "@/lib/fulfillment";
+import { earnStampForOrder, restoreStockForOrderItems } from "@/lib/fulfillment";
 import { updateOrderStatusSchema } from "@/lib/validation/orders";
 
 // Every order line points at one of three catalogs -- include all three so the response
@@ -36,7 +35,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // Two fulfillment side effects ride on the status change, so they share its transaction:
   //  - completed: the purchase is fulfilled, so the customer earns one loyalty stamp.
-  //    completed is terminal, so an order can only reach it once -- no double-earn guard needed.
+  //    earnStampForOrder is idempotent by (type=earn, relatedOrderId), so an order that
+  //    already earned at online payment (Stripe webhook) won't double-earn here.
   //  - cancelled: the reserved stock is handed back (mirrors the decrement at order creation).
   const order = await prisma.$transaction(async (tx) => {
     const updated = await tx.order.update({
@@ -46,16 +46,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     if (to === "completed") {
-      const customer = await tx.customer.findUnique({ where: { id: existing.customerId } });
-      if (customer) {
-        await tx.customer.update({
-          where: { id: customer.id },
-          data: { loyaltyStampCount: applyEarn(customer.loyaltyStampCount) },
-        });
-        await tx.loyaltyTransaction.create({
-          data: { customerId: customer.id, type: "earn", relatedOrderId: id },
-        });
-      }
+      await earnStampForOrder(tx, existing.customerId, id);
     } else if (to === "cancelled") {
       const items = await tx.orderItem.findMany({ where: { orderId: id } });
       await restoreStockForOrderItems(tx, items);

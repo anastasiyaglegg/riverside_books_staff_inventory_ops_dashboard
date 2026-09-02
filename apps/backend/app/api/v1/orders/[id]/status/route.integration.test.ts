@@ -121,6 +121,42 @@ describe("PATCH /api/v1/orders/:id/status", () => {
     expect(tx?.relatedOrderId).toBe(order.id);
   });
 
+  it("does not double-earn a stamp when a paid_online order that already earned is completed", async () => {
+    // Mirrors reality: the Stripe webhook already earned this order's stamp at payment time.
+    const customer = await prisma.customer.create({
+      data: {
+        firstName: "Paid",
+        lastName: "Reader",
+        email: "paid@example.com",
+        loyaltyStampCount: 1,
+      },
+    });
+    const order = await prisma.order.create({
+      data: {
+        customerId: customer.id,
+        status: "ready_for_pickup",
+        paymentStatus: "paid_online",
+        totalCents: 1000,
+      },
+    });
+    await prisma.loyaltyTransaction.create({
+      data: { customerId: customer.id, type: "earn", relatedOrderId: order.id },
+    });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/v1/orders/${order.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "completed" }),
+      }),
+      { params: Promise.resolve({ id: order.id }) },
+    );
+    expect(response.status).toBe(200);
+
+    const updated = await prisma.customer.findUnique({ where: { id: customer.id } });
+    expect(updated?.loyaltyStampCount).toBe(1); // unchanged -- no second stamp
+    expect(await prisma.loyaltyTransaction.count({ where: { relatedOrderId: order.id } })).toBe(1);
+  });
+
   it("restores reserved stock when an order is cancelled", async () => {
     // Book stock already reflects the reservation (5 on hand, 2 sold on this order).
     const book = await prisma.book.create({

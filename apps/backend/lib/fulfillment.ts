@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { deriveStockStatus } from "@/lib/inventory";
+import { applyEarn } from "@/lib/loyalty";
 
 // An order line for stock purposes: exactly one product ref plus a quantity. Matches both
 // resolveCart's ResolvedOrderItem and a persisted OrderItem row (nullable ids).
@@ -75,4 +76,36 @@ export function restoreStockForOrderItems(
   items: StockLineItem[],
 ): Promise<void> {
   return adjustStock(tx, items, 1);
+}
+
+// Earn exactly one loyalty stamp for an order, idempotently. Both fulfillment paths call
+// this: the Stripe webhook (online orders earn the moment payment is confirmed) and the
+// completed-status transition (pay-in-store orders earn at pickup). Whichever fires first
+// writes the stamp; the other is a no-op. The guard is the (type=earn, relatedOrderId)
+// pairing, so a given order can never double-earn regardless of path or a Stripe retry.
+// Runs inside the caller's transaction so the stamp commits atomically with the order.
+export async function earnStampForOrder(
+  tx: Prisma.TransactionClient,
+  customerId: string,
+  orderId: string,
+): Promise<void> {
+  const alreadyEarned = await tx.loyaltyTransaction.findFirst({
+    where: { type: "earn", relatedOrderId: orderId },
+  });
+  if (alreadyEarned) {
+    return;
+  }
+
+  const customer = await tx.customer.findUnique({ where: { id: customerId } });
+  if (!customer) {
+    return;
+  }
+
+  await tx.customer.update({
+    where: { id: customerId },
+    data: { loyaltyStampCount: applyEarn(customer.loyaltyStampCount) },
+  });
+  await tx.loyaltyTransaction.create({
+    data: { customerId, type: "earn", relatedOrderId: orderId },
+  });
 }
